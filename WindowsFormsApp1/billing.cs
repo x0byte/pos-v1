@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using MySql.Data.MySqlClient;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-//using iTextSharp.text;
-//using iTextSharp.text.pdf;
 using System.IO;
 
 using System.Drawing.Printing;

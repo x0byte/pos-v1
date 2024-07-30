@@ -35,7 +35,7 @@ namespace WindowsFormsApp1
             }
             else
             {
-                MessageBox.Show("Username or Password is incorrect", "Invalid Credentials", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                MessageBox.Show("Username or Password is incorrect", "Invalid Credentials", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

@@ -267,6 +267,11 @@ namespace WindowsFormsApp1
             }
         }
 
+        public void authenticateInputs()
+        {
+
+        }
+
         private void btnClear_Click(object sender, EventArgs e)
         {
             clearTexts();

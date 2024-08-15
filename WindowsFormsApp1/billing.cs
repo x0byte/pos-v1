@@ -36,6 +36,8 @@ namespace WindowsFormsApp1
 
             this.dataGridBilling.CellClick += new DataGridViewCellEventHandler(this.dataGridView1_CellClick);
 
+            dataGridBilling.Font = new Font("Arial", 14);
+
 
         }
         private void TextBox_TextChanged(object sender, EventArgs e)
@@ -78,7 +80,7 @@ namespace WindowsFormsApp1
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
-                string sql = "SELECT DISTINCT item_name FROM inventory WHERE item_name LIKE @query OR keywords LIKE @query LIMIT 10";
+                string sql = "SELECT DISTINCT item_name FROM inventory WHERE item_name LIKE @query OR REPLACE(item_name, ' ', '') LIKE @query OR keywords LIKE @query";
                 using (MySqlCommand cmd = new MySqlCommand(sql, conn))
                 {
                     cmd.Parameters.AddWithValue("@query", "%" + query + "%");
@@ -750,6 +752,18 @@ namespace WindowsFormsApp1
             Home home = new Home();
             home.Show();
             this.Hide();
+        }
+
+        private void txtItemName_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnScan_Click(object sender, EventArgs e)
+        {
+            item_scan item = new item_scan();
+            item.Show();
+            
         }
     }
 }

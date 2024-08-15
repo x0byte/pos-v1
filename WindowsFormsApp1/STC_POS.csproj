@@ -13,7 +13,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>C:\Users\MSI\Desktop\POS\</PublishUrl>
+    <PublishUrl>C:\Users\MSI\Desktop\Updated_POS\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
     <UpdateEnabled>false</UpdateEnabled>
@@ -23,7 +23,7 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>1</ApplicationRevision>
+    <ApplicationRevision>2</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -175,6 +175,12 @@
     <Compile Include="Inventory-management.Designer.cs">
       <DependentUpon>Inventory-management.cs</DependentUpon>
     </Compile>
+    <Compile Include="item_scan.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="item_scan.Designer.cs">
+      <DependentUpon>item_scan.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlServerTypes\Loader.cs" />
@@ -189,6 +195,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Inventory-management.resx">
       <DependentUpon>Inventory-management.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="item_scan.resx">
+      <DependentUpon>item_scan.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

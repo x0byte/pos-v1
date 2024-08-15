@@ -102,3 +102,4 @@ C:\Users\MSI\source\repos\WindowsFormsApp1\WindowsFormsApp1\bin\Debug\WindowsFor
 C:\Users\MSI\source\repos\WindowsFormsApp1\WindowsFormsApp1\bin\Debug\WindowsFormsApp1.application
 C:\Users\MSI\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.exe.manifest
 C:\Users\MSI\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.application
+C:\Users\MSI\source\repos\WindowsFormsApp1\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.item_scan.resources

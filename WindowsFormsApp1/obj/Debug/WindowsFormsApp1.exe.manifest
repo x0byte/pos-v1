@@ -822,14 +822,14 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="WindowsFormsApp1.exe" size="213464">
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="WindowsFormsApp1.exe" size="217048">
       <assemblyIdentity name="WindowsFormsApp1" version="1.0.0.0" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha256" />
-        <dsig:DigestValue>i72dTujQN5SsgpMpidrSA1/f8Sb1Z4cafSAyFlmDsgI=</dsig:DigestValue>
+        <dsig:DigestValue>l+F+UG1Khqlq8pEdduKScZejJQRgD0u3Eq3NYKT6mR8=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

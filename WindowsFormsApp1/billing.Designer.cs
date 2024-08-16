@@ -69,7 +69,7 @@
             this.dataGridBilling.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dataGridBilling.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.dataGridBilling.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridBilling.Location = new System.Drawing.Point(634, 23);
+            this.dataGridBilling.Location = new System.Drawing.Point(631, 17);
             this.dataGridBilling.Name = "dataGridBilling";
             this.dataGridBilling.RowHeadersWidth = 51;
             this.dataGridBilling.RowTemplate.Height = 24;
@@ -181,7 +181,7 @@
             // 
             this.button1.BackColor = System.Drawing.Color.LimeGreen;
             this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(36, 751);
+            this.button1.Location = new System.Drawing.Point(30, 754);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(479, 86);
             this.button1.TabIndex = 5;
@@ -193,7 +193,7 @@
             // 
             this.btnClear.BackColor = System.Drawing.Color.IndianRed;
             this.btnClear.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnClear.Location = new System.Drawing.Point(36, 861);
+            this.btnClear.Location = new System.Drawing.Point(33, 855);
             this.btnClear.Name = "btnClear";
             this.btnClear.Size = new System.Drawing.Size(128, 64);
             this.btnClear.TabIndex = 6;
@@ -205,7 +205,7 @@
             // 
             this.btnUpdate.BackColor = System.Drawing.Color.Goldenrod;
             this.btnUpdate.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnUpdate.Location = new System.Drawing.Point(216, 861);
+            this.btnUpdate.Location = new System.Drawing.Point(213, 855);
             this.btnUpdate.Name = "btnUpdate";
             this.btnUpdate.Size = new System.Drawing.Size(126, 64);
             this.btnUpdate.TabIndex = 7;
@@ -227,7 +227,7 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(30, 695);
+            this.label9.Location = new System.Drawing.Point(30, 878);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(30, 16);
             this.label9.TabIndex = 4;
@@ -237,7 +237,7 @@
             // 
             this.lblFinalPrice.AutoSize = true;
             this.lblFinalPrice.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFinalPrice.Location = new System.Drawing.Point(56, 685);
+            this.lblFinalPrice.Location = new System.Drawing.Point(56, 868);
             this.lblFinalPrice.Name = "lblFinalPrice";
             this.lblFinalPrice.Size = new System.Drawing.Size(0, 29);
             this.lblFinalPrice.TabIndex = 5;
@@ -265,7 +265,7 @@
             // 
             this.btnDelete.BackColor = System.Drawing.Color.HotPink;
             this.btnDelete.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDelete.Location = new System.Drawing.Point(389, 861);
+            this.btnDelete.Location = new System.Drawing.Point(386, 855);
             this.btnDelete.Name = "btnDelete";
             this.btnDelete.Size = new System.Drawing.Size(126, 64);
             this.btnDelete.TabIndex = 8;
@@ -277,7 +277,7 @@
             // 
             this.button2.BackColor = System.Drawing.Color.DodgerBlue;
             this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button2.Location = new System.Drawing.Point(36, 949);
+            this.button2.Location = new System.Drawing.Point(33, 943);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(479, 74);
             this.button2.TabIndex = 9;
@@ -288,7 +288,7 @@
             // button3
             // 
             this.button3.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button3.Location = new System.Drawing.Point(38, 1040);
+            this.button3.Location = new System.Drawing.Point(35, 1034);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(477, 65);
             this.button3.TabIndex = 10;
@@ -300,7 +300,7 @@
             // 
             this.lblTotalPrice.AutoSize = true;
             this.lblTotalPrice.Font = new System.Drawing.Font("Microsoft Sans Serif", 22.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblTotalPrice.Location = new System.Drawing.Point(699, 1088);
+            this.lblTotalPrice.Location = new System.Drawing.Point(696, 1082);
             this.lblTotalPrice.Name = "lblTotalPrice";
             this.lblTotalPrice.Size = new System.Drawing.Size(0, 42);
             this.lblTotalPrice.TabIndex = 20;
@@ -309,7 +309,7 @@
             // 
             this.label11.AutoSize = true;
             this.label11.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label11.Location = new System.Drawing.Point(648, 1103);
+            this.label11.Location = new System.Drawing.Point(645, 1097);
             this.label11.Name = "label11";
             this.label11.Size = new System.Drawing.Size(45, 25);
             this.label11.TabIndex = 19;
@@ -319,7 +319,7 @@
             // 
             this.label12.AutoSize = true;
             this.label12.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label12.Location = new System.Drawing.Point(637, 1051);
+            this.label12.Location = new System.Drawing.Point(634, 1045);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(56, 25);
             this.label12.TabIndex = 18;
@@ -329,7 +329,7 @@
             // 
             this.label13.AutoSize = true;
             this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label13.Location = new System.Drawing.Point(1104, 1051);
+            this.label13.Location = new System.Drawing.Point(970, 1021);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(159, 25);
             this.label13.TabIndex = 18;
@@ -339,7 +339,7 @@
             // 
             this.lblCount.AutoSize = true;
             this.lblCount.Font = new System.Drawing.Font("Microsoft Sans Serif", 22.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblCount.Location = new System.Drawing.Point(1290, 1044);
+            this.lblCount.Location = new System.Drawing.Point(1156, 1014);
             this.lblCount.Name = "lblCount";
             this.lblCount.Size = new System.Drawing.Size(0, 42);
             this.lblCount.TabIndex = 20;
@@ -390,7 +390,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
-            this.ClientSize = new System.Drawing.Size(1555, 1225);
+            this.ClientSize = new System.Drawing.Size(1568, 1055);
             this.Controls.Add(this.btnScan);
             this.Controls.Add(this.label10);
             this.Controls.Add(this.pictureBox1);
@@ -436,8 +436,6 @@
         }
 
         #endregion
-
-        private System.Windows.Forms.DataGridView dataGridBilling;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
@@ -459,14 +457,15 @@
         private System.Windows.Forms.Button btnDelete;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
-        private System.Windows.Forms.Label lblTotalPrice;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.Label label13;
-        private System.Windows.Forms.Label lblCount;
         private System.Windows.Forms.TextBox txtRetailPrice;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Button btnScan;
+        public System.Windows.Forms.DataGridView dataGridBilling;
+        public System.Windows.Forms.Label lblTotalPrice;
+        public System.Windows.Forms.Label lblCount;
     }
 }

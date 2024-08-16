@@ -40,6 +40,7 @@ namespace WindowsFormsApp1
                 txtPrice.Text = row.Cells["retail_price"].Value?.ToString() ?? string.Empty;
                 txtAddedBy.Text = row.Cells["added_by"].Value?.ToString() ?? string.Empty;
                 txtKeywords.Text = row.Cells["keywords"].Value?.ToString() ?? string.Empty;
+                txtBarcode.Text = row.Cells["barcode"].Value?.ToString() ?? string.Empty;
 
             }
         }
@@ -91,7 +92,7 @@ namespace WindowsFormsApp1
 
                 // Apply the filter based on item_name and keywords columns
                 (dataGridInventory.DataSource as DataTable).DefaultView.RowFilter =
-                    string.Format("item_name LIKE '%{0}%' OR keywords LIKE '%{0}%'", filterExpression);
+                    string.Format("item_name LIKE '%{0}%' OR keywords LIKE '%{0}%' OR barcode LIKE '%{0}%'", filterExpression);
             }
         }
 
@@ -132,7 +133,7 @@ namespace WindowsFormsApp1
                 try
                 {
                     connection.Open();
-                    string query = "INSERT INTO inventory (item_name, retail_price, amount, added_by, keywords) VALUES (@name, @price, @amount, @added_by, @keywords)";
+                    string query = "INSERT INTO inventory (item_name, retail_price, amount, added_by, keywords, barcode) VALUES (@name, @price, @amount, @added_by, @keywords, @barcode)";
                     using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@name", txtItemName.Text);
@@ -140,6 +141,7 @@ namespace WindowsFormsApp1
                         command.Parameters.AddWithValue("@amount", txtAmount.Text);
                         command.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
                         command.Parameters.AddWithValue("@keywords", txtKeywords.Text);
+                        command.Parameters.AddWithValue("@barcode", txtBarcode.Text);
                         command.ExecuteNonQuery();
                         MessageBox.Show("Successfully Added!", " New Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -162,6 +164,7 @@ namespace WindowsFormsApp1
             txtAmount.Text = string.Empty;
             txtAddedBy.Text = string.Empty;
             txtKeywords.Text = string.Empty;
+            txtBarcode.Text = string.Empty;
 
         }
 
@@ -180,13 +183,15 @@ namespace WindowsFormsApp1
                     try
                     {
                         conn.Open();
-                        string sql = "UPDATE `inventory` SET `item_name`=@item_name,`retail_price`=@price,`amount`=@amount,`added_by`=@added_by,`keywords`=@keywords WHERE id = @id";
+                        string sql = "UPDATE `inventory` SET `item_name`=@item_name,`retail_price`=@price,`amount`=@amount,`added_by`=@added_by,`keywords`=@keywords, `barcode`=@barcode WHERE id = @id";
                         MySqlCommand cmd = new MySqlCommand(sql, conn);
                         cmd.Parameters.AddWithValue("@item_name", txtItemName.Text);
                         cmd.Parameters.AddWithValue("@amount", txtAmount.Text);
                         cmd.Parameters.AddWithValue("@price", txtPrice.Text);
                         cmd.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
                         cmd.Parameters.AddWithValue("@keywords", txtKeywords.Text);
+                        cmd.Parameters.AddWithValue("@barcode", txtBarcode.Text);
+
                         // Add more parameters as needed
                         cmd.Parameters.AddWithValue("@id", dataGridInventory.SelectedRows[0].Cells["id"].Value);
                         cmd.ExecuteNonQuery();

@@ -329,7 +329,7 @@
             // 
             this.label13.AutoSize = true;
             this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label13.Location = new System.Drawing.Point(970, 1021);
+            this.label13.Location = new System.Drawing.Point(1057, 1048);
             this.label13.Name = "label13";
             this.label13.Size = new System.Drawing.Size(159, 25);
             this.label13.TabIndex = 18;
@@ -339,7 +339,7 @@
             // 
             this.lblCount.AutoSize = true;
             this.lblCount.Font = new System.Drawing.Font("Microsoft Sans Serif", 22.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblCount.Location = new System.Drawing.Point(1156, 1014);
+            this.lblCount.Location = new System.Drawing.Point(1243, 1041);
             this.lblCount.Name = "lblCount";
             this.lblCount.Size = new System.Drawing.Size(0, 42);
             this.lblCount.TabIndex = 20;

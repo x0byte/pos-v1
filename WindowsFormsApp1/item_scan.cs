@@ -13,19 +13,22 @@ namespace WindowsFormsApp1
 {
     public partial class item_scan : Form
     {
-        private billing billing;
+        private billing billingForm;
         private string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
 
 
-        public item_scan()
+        public item_scan(billing billingForm)
         {
             InitializeComponent();
+
             txtBarcode.Focus();
             lblItemName.Visible = false;
             lblPrice.Visible = false;
             txtPrice.Visible = false;
 
-            this.billing = billing;
+            txtBarcode.TextChanged += txtBarcode_TextChanged;
+
+            this.billingForm = billingForm;
 
         }
 
@@ -45,8 +48,8 @@ namespace WindowsFormsApp1
             // Perform the database query asynchronously
             await Task.Run(() =>
             {
-                string query = "SELECT item_name, price FROM inventory WHERE barcode = @barcode";
-                using (MySqlConnection connection = new MySqlConnection("your_connection_string"))
+                string query = "SELECT item_name, retail_price FROM inventory WHERE barcode = @barcode";
+                using (MySqlConnection connection = new MySqlConnection(connectionString))
                 {
                     connection.Open();
                     MySqlCommand cmd = new MySqlCommand(query, connection);
@@ -59,7 +62,7 @@ namespace WindowsFormsApp1
                         this.Invoke((Action)(() =>
                         {
                             lblItemName.Text = reader["item_name"].ToString();
-                            lblPrice.Text = reader["price"].ToString();
+                            txtPrice.Text = reader["retail_price"].ToString();
                             lblItemName.Visible = true;
                             lblPrice.Visible = true;
                             txtPrice.Visible=true;
@@ -150,7 +153,7 @@ namespace WindowsFormsApp1
                     {
                         DataTable dataTable = new DataTable();
                         adapter.Fill(dataTable);
-                        billing.dataGridBilling.DataSource = dataTable;
+                        billingForm.dataGridBilling.DataSource = dataTable;
                     }
                 }
             }
@@ -164,7 +167,7 @@ namespace WindowsFormsApp1
         {
             decimal sum = 0;
 
-            foreach (DataGridViewRow row in billing.dataGridBilling.Rows)
+            foreach (DataGridViewRow row in billingForm.dataGridBilling.Rows)
             {
                 // Ensure the row is not the new row (usually the last row in DataGridView for adding new records)
                 if (row.IsNewRow) continue;
@@ -178,7 +181,7 @@ namespace WindowsFormsApp1
                 }
             }
 
-            billing.lblTotalPrice.Text = sum.ToString();
+            billingForm.lblTotalPrice.Text = sum.ToString();
         }
         private void GetRowCount()
         {
@@ -195,7 +198,7 @@ namespace WindowsFormsApp1
                 }
             }
 
-            billing.lblCount.Text = rowCount.ToString();
+            billingForm.lblCount.Text = rowCount.ToString();
         }
     }
 }

@@ -761,7 +761,7 @@ namespace WindowsFormsApp1
 
         private void btnScan_Click(object sender, EventArgs e)
         {
-            item_scan item = new item_scan();
+            item_scan item = new item_scan(this);
             item.Show();
             
         }

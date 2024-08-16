@@ -109,6 +109,7 @@ namespace WindowsFormsApp1
             }
 
             LoadItemPrice(txtItemName.Text);
+            loadItemCost(txtItemName.Text);
         }
         private void LoadItemPrice(string itemName)
         {
@@ -129,6 +130,35 @@ namespace WindowsFormsApp1
                         else
                         {
                             txtRetailPrice.Text = "Price: Not available";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred while fetching the price: " + ex.Message);
+            }
+        }
+
+        private void loadItemCost(string itemName)
+        {
+            try
+            {
+                using (MySqlConnection conn = new MySqlConnection(connectionString))
+                {
+                    conn.Open();
+                    string query = "SELECT cost FROM inventory WHERE item_name = @itemName";
+                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@itemName", itemName);
+                        object result = cmd.ExecuteScalar();
+                        if (result != null)
+                        {
+                            lblCost.Text = result.ToString();
+                        }
+                        else
+                        {
+                            lblCost.Text = "0";
                         }
                     }
                 }
@@ -241,28 +271,38 @@ namespace WindowsFormsApp1
 
 
 
-                try
+                if (isTheSaleProfitable())
                 {
-                    connection.Open();
-                    string query = "INSERT INTO billing (ítem_name, rate, amount, discounted_price) VALUES (@name, @rate, @amount, @price)";
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    try
                     {
-                        command.Parameters.AddWithValue("@name", txtItemName.Text);
-                        command.Parameters.AddWithValue("@rate", txtRetailPrice.Text);
-                        command.Parameters.AddWithValue("@amount", txtAmount.Text);
-                        command.Parameters.AddWithValue("@price", lblFinalPrice.Text);
-                        command.ExecuteNonQuery();
-                        MessageBox.Show("Successfully Added!", " New Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        connection.Open();
+                        string query = "INSERT INTO billing (ítem_name, rate, amount, discounted_price) VALUES (@name, @rate, @amount, @price)";
+                        using (MySqlCommand command = new MySqlCommand(query, connection))
+                        {
+                            command.Parameters.AddWithValue("@name", txtItemName.Text);
+                            command.Parameters.AddWithValue("@rate", txtRetailPrice.Text);
+                            command.Parameters.AddWithValue("@amount", txtAmount.Text);
+                            command.Parameters.AddWithValue("@price", lblFinalPrice.Text);
+                            command.ExecuteNonQuery();
+                            MessageBox.Show("Successfully Added!", " New Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                            clearTexts();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error: " + ex.Message);
                     }
                 }
-                catch (Exception ex)
+
+                else
                 {
-                    MessageBox.Show("Error: " + ex.Message);
+                    MessageBox.Show("This item cannot be added because there's an error with its price.");
                 }
 
                 LoadBillingData();
                 calculate_Total();
-                clearTexts();
+                
                 GetRowCount();
 
 
@@ -653,17 +693,19 @@ namespace WindowsFormsApp1
 
                 Font discountFont = new Font("Arial", 10, FontStyle.Bold);
 
+                Font grandTotalFont = new Font("Arial", 10, FontStyle.Regular);
+
                 // Print Total and Discounted Amounts
                 offsetY += 20;
                 graphics.DrawString($"Total Rs.: {totalAmount:N2}", font, Brushes.Black, startX, startY + offsetY);
                 offsetY += (int)fontHeight + 5;
                 graphics.DrawString($"Discount Rs. : {discountedAmount:N2}", discountFont, Brushes.Black, startX, startY + offsetY);
                 offsetY += (int)fontHeight + 5;
-                graphics.DrawString($"Grand Total Rs. : {(totalAmount - discountedAmount):N2}", font, Brushes.Black, startX, startY + offsetY);
+                graphics.DrawString($"Grand Total Rs. : {(totalAmount - discountedAmount):N2}", grandTotalFont, Brushes.Black, startX, startY + offsetY);
 
                 // Add Footnotes
                 offsetY += 40; // Add some space before the footnotes
-                string returnPolicy = "Returns accepted within 14 days with the receipt";
+                string returnPolicy = "Returns accepted within 7 days with the receipt";
                 string outroRemarks = "Thank you for shopping with us!";
                 string softwareCompanyInfo = "POS System provided by: BlackBox Computers";
                 string softwareCompanyContact = "070 1371 880";
@@ -764,6 +806,58 @@ namespace WindowsFormsApp1
             item_scan item = new item_scan(this);
             item.Show();
             
+        }
+
+        private bool isTheSaleProfitable()
+        {
+            lblCost.Text = string.IsNullOrEmpty(lblCost.Text) ? "0" : lblCost.Text;
+
+
+            double minimum_price = double.Parse(lblCost.Text) * double.Parse(txtAmount.Text);
+            double billed_price = double.Parse(lblFinalPrice.Text);
+
+            if (minimum_price > 0 && billed_price < minimum_price)
+            {
+                string password = PromptForPassword();
+                if (password == "saman123") // Replace "your_password" with the actual password
+                {
+                    return true; // Allow the sale to proceed
+                }
+                else
+                {
+                    System.Windows.Forms.MessageBox.Show("Incorrect password. Sale cannot proceed.", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                    return false;
+                }
+            }
+
+            return true; // Sale is profitable, proceed as normal
+        }
+
+        private string PromptForPassword()
+        {
+            string password = null;
+            System.Windows.Forms.Form prompt = new System.Windows.Forms.Form()
+            {
+                Width = 300,
+                Height = 200,
+                FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog,
+                Text = "Requires an Override Password",
+                StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
+            };
+
+            System.Windows.Forms.Label textLabel = new System.Windows.Forms.Label() { Left = 20, Top = 20, Text = "Enter password:" };
+            System.Windows.Forms.TextBox passwordBox = new System.Windows.Forms.TextBox() { Left = 20, Top = 50, Width = 240, UseSystemPasswordChar = true };
+            System.Windows.Forms.Button confirmation = new System.Windows.Forms.Button() { Text = "OK", Left = 90, Width = 100, Top = 80, DialogResult = System.Windows.Forms.DialogResult.OK };
+            System.Windows.Forms.Label details = new System.Windows.Forms.Label() { Left = 20, Top = 100, Text = "Cannot proceed without an override password because this sale isn't profitable." };
+
+            confirmation.Click += (sender, e) => { password = passwordBox.Text; prompt.Close(); };
+
+            prompt.Controls.Add(passwordBox);
+            prompt.Controls.Add(confirmation);
+            prompt.Controls.Add(textLabel);
+            prompt.AcceptButton = confirmation;
+
+            return prompt.ShowDialog() == System.Windows.Forms.DialogResult.OK ? password : null;
         }
     }
 }

@@ -60,6 +60,8 @@
             this.label10 = new System.Windows.Forms.Label();
             this.btnScan = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.label14 = new System.Windows.Forms.Label();
+            this.lblCost = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridBilling)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
@@ -385,12 +387,34 @@
             this.pictureBox1.TabStop = false;
             this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
+            // label14
+            // 
+            this.label14.AutoSize = true;
+            this.label14.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label14.Location = new System.Drawing.Point(353, 651);
+            this.label14.Name = "label14";
+            this.label14.Size = new System.Drawing.Size(53, 25);
+            this.label14.TabIndex = 3;
+            this.label14.Text = "Cost";
+            this.label14.Click += new System.EventHandler(this.label2_Click);
+            // 
+            // lblCost
+            // 
+            this.lblCost.AutoSize = true;
+            this.lblCost.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblCost.Location = new System.Drawing.Point(360, 688);
+            this.lblCost.Name = "lblCost";
+            this.lblCost.Size = new System.Drawing.Size(30, 32);
+            this.lblCost.TabIndex = 25;
+            this.lblCost.Text = "0";
+            // 
             // billing
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.ClientSize = new System.Drawing.Size(1568, 1055);
+            this.Controls.Add(this.lblCost);
             this.Controls.Add(this.btnScan);
             this.Controls.Add(this.label10);
             this.Controls.Add(this.pictureBox1);
@@ -417,6 +441,7 @@
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label7);
+            this.Controls.Add(this.label14);
             this.Controls.Add(this.label8);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.label2);
@@ -467,5 +492,7 @@
         public System.Windows.Forms.DataGridView dataGridBilling;
         public System.Windows.Forms.Label lblTotalPrice;
         public System.Windows.Forms.Label lblCount;
+        private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.Label lblCost;
     }
 }

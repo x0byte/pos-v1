@@ -65,7 +65,7 @@
             this.dataGridInventory.RowHeadersWidth = 51;
             this.dataGridInventory.RowTemplate.Height = 24;
             this.dataGridInventory.Size = new System.Drawing.Size(1016, 924);
-            this.dataGridInventory.TabIndex = 0;
+            this.dataGridInventory.TabIndex = 11;
             this.dataGridInventory.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridInventory_CellContentClick);
             // 
             // txtSearch

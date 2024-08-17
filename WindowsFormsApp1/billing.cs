@@ -25,7 +25,6 @@ namespace WindowsFormsApp1
         private readonly System.Windows.Forms.TextBox textBox;
 
 
-
         public billing()
         {
             InitializeComponent();
@@ -187,6 +186,25 @@ namespace WindowsFormsApp1
             lblCount.Text = rowCount.ToString();
         }
 
+
+        private string loadEmployeeCode()
+        {
+            string selectedEmployee = null;
+
+            using (var empSelectionForm = new emp_selection())
+            {
+
+                if (empSelectionForm.ShowDialog() == DialogResult.OK)
+                {
+                    // Retrieve the selected employee from the emp_selection form
+                    selectedEmployee = empSelectionForm.SelectedEmployee;
+                }
+            }
+
+            return selectedEmployee;
+        }
+
+
         private void clearTexts()
         {
             txtItemName.Text = string.Empty;
@@ -319,6 +337,8 @@ namespace WindowsFormsApp1
             clearTexts();
         }
 
+        
+
         private void button2_Click(object sender, EventArgs e)
         {
             DialogResult dialogResult = MessageBox.Show("Are you sure you want to checkout this order?", "Confirmation", MessageBoxButtons.YesNo);
@@ -328,53 +348,59 @@ namespace WindowsFormsApp1
                 LoadBillingData();
 
                 //////////////////////////////////////////
-                string salesperson = Microsoft.VisualBasic.Interaction.InputBox(
+                /*string salesperson = Microsoft.VisualBasic.Interaction.InputBox(
                 "Enter the salesperson's name:",
                 "Salesperson",
                 "",
                 -1,
-                -1);
+                -1);*/
+
+                string emp_code = loadEmployeeCode();
 
                 // Check if the user clicked OK and entered a name
-                if (!string.IsNullOrEmpty(salesperson))
+                if (!string.IsNullOrEmpty(emp_code))
                 {
                     // Proceed with printing the bill, including the salesperson's name
                     //////////////////////////////////////////
+                   
 
-                    string cashierName = salesperson; // Update with the actual cashier's name
+                    string cashierName = emp_code; // Update with the actual cashier's name
                     decimal totalAmount = CalculateGrandTotal(); // Update with the actual total amount
                     decimal discountedAmount = totalAmount - decimal.Parse(lblTotalPrice.Text); // Update with the actual discounted amount
 
                     PrintReceipt(dataGridBilling, cashierName, totalAmount, discountedAmount);
                     ///////////////////////////////////////////
+                    ///
+
+                    clearTexts();
+                    lblCount.Text = string.Empty;
+                    lblTotalPrice.Text = string.Empty;
+
+                    using (MySqlConnection connection = new MySqlConnection(connectionString))
+                    {
+                        connection.Open();
+                        string query = "TRUNCATE TABLE `db_stc`.`billing`";
+                        using (MySqlCommand command = new MySqlCommand(query, connection))
+                        {
+                            command.ExecuteNonQuery();
+                        }
+                    }
+
+                    LoadBillingData();
+
                 }
                 else
                 {
                     MessageBox.Show("Please enter the salesperson's name to proceed.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
 
-                
-
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "TRUNCATE TABLE `db_stc`.`billing`";
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
-                    {
-                        command.ExecuteNonQuery();
-                    }
-                }
-
-                LoadBillingData();
             }
             else if (dialogResult == DialogResult.No)
             {
 
             }
 
-            clearTexts();
-            lblCount.Text = string.Empty;
-            lblTotalPrice.Text = string.Empty;
+            
 
         }
 

@@ -236,7 +236,7 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Name = "item_scan";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "item_scan";
+            this.Text = "Scan the Item";
             this.Load += new System.EventHandler(this.item_scan_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

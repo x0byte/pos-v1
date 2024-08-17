@@ -157,6 +157,12 @@
     <Compile Include="billing.Designer.cs">
       <DependentUpon>billing.cs</DependentUpon>
     </Compile>
+    <Compile Include="emp_selection.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="emp_selection.Designer.cs">
+      <DependentUpon>emp_selection.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -186,6 +192,9 @@
     <Compile Include="SqlServerTypes\Loader.cs" />
     <EmbeddedResource Include="billing.resx">
       <DependentUpon>billing.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="emp_selection.resx">
+      <DependentUpon>emp_selection.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>

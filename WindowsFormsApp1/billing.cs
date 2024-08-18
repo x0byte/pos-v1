@@ -19,12 +19,12 @@ namespace WindowsFormsApp1
     public partial class billing : Form
     {
         // Connection string to your MySQL database
-        private string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;"; 
-
+        private string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
+        private bool isBillPaused;
         private readonly ListBox suggestionListBox;
         private readonly System.Windows.Forms.TextBox textBox;
 
-
+        
         public billing()
         {
             InitializeComponent();
@@ -36,6 +36,8 @@ namespace WindowsFormsApp1
             this.dataGridBilling.CellClick += new DataGridViewCellEventHandler(this.dataGridView1_CellClick);
 
             dataGridBilling.Font = new Font("Arial", 14);
+
+            checkForPauses(); 
 
 
         }
@@ -237,6 +239,10 @@ namespace WindowsFormsApp1
             {
                 MessageBox.Show("An error occurred while fetching data: " + ex.Message);
             }
+
+            calculate_Total();
+            CalculateGrandTotal();
+            GetRowCount();
         }
 
         private void billing_Load(object sender, EventArgs e)
@@ -320,7 +326,7 @@ namespace WindowsFormsApp1
 
                 LoadBillingData();
                 calculate_Total();
-                
+
                 GetRowCount();
 
 
@@ -337,7 +343,7 @@ namespace WindowsFormsApp1
             clearTexts();
         }
 
-        
+
 
         private void button2_Click(object sender, EventArgs e)
         {
@@ -362,11 +368,11 @@ namespace WindowsFormsApp1
                 {
                     // Proceed with printing the bill, including the salesperson's name
                     //////////////////////////////////////////
-                   
+
 
                     string cashierName = emp_code; // Update with the actual cashier's name
                     decimal totalAmount = CalculateGrandTotal(); // Update with the actual total amount
-                    decimal discountedAmount = totalAmount - decimal.Parse(lblTotalPrice.Text); // Update with the actual discounted amount
+                    decimal discountedAmount = totalAmount - decimal.Parse(lblTotalPrice.Text); // Update w ith the actual discounted amount
 
                     PrintReceipt(dataGridBilling, cashierName, totalAmount, discountedAmount);
                     ///////////////////////////////////////////
@@ -380,6 +386,8 @@ namespace WindowsFormsApp1
                     {
                         connection.Open();
                         string query = "TRUNCATE TABLE `db_stc`.`billing`";
+
+
                         using (MySqlCommand command = new MySqlCommand(query, connection))
                         {
                             command.ExecuteNonQuery();
@@ -400,7 +408,7 @@ namespace WindowsFormsApp1
 
             }
 
-            
+
 
         }
 
@@ -456,11 +464,11 @@ namespace WindowsFormsApp1
                     MessageBox.Show("Please select a row to delete.", "Delete Entry", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
-            else if(dialogResult == DialogResult.No)
+            else if (dialogResult == DialogResult.No)
             {
 
             }
-            
+
             GetRowCount();
             calculate_Total();
             ReorderBillingTable();
@@ -525,7 +533,7 @@ namespace WindowsFormsApp1
 
             }
 
-            
+
         }
 
         private void dataGridBilling_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -593,7 +601,7 @@ namespace WindowsFormsApp1
 
                         transaction.Commit();
                     }
-                    catch (Exception ex)
+                    catch
                     {
                         transaction.Rollback();
                         //throw new Exception("An error occurred while reordering the billing table.", ex);
@@ -831,7 +839,7 @@ namespace WindowsFormsApp1
         {
             item_scan item = new item_scan(this);
             item.Show();
-            
+
         }
 
         private bool isTheSaleProfitable()
@@ -884,6 +892,139 @@ namespace WindowsFormsApp1
             prompt.AcceptButton = confirmation;
 
             return prompt.ShowDialog() == System.Windows.Forms.DialogResult.OK ? password : null;
+        }
+
+        private void listBoxSuggestions_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnPauseBill_Click(object sender, EventArgs e)
+        {
+
+            DialogResult dialogResult = MessageBox.Show("Are you sure you want to make that change?  ", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (dialogResult == DialogResult.Yes)
+            {
+                if (btnPauseBill.Text == "Pause this Bill")
+                {
+                    sendIntoPaused();
+                }
+
+                else if (btnPauseBill.Text == "Go to the Previous Bill")
+                {                   
+                    getThePausedIntoBilling();
+                }
+
+
+            }
+        }
+
+        public void checkForPauses()
+        {
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                connection.Open();
+
+                string query = "SELECT * FROM paused_bill";
+
+                using (MySqlDataAdapter adaptor = new MySqlDataAdapter(query, connection))
+                {
+                    DataTable datatable = new DataTable();
+                    adaptor.Fill(datatable);
+
+
+                    if (datatable.Rows.Count != 0)
+                    {
+                        DialogResult result = MessageBox.Show("There is another bill paused in the system. Do you want to access it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                        if (result == DialogResult.Yes)
+                        {
+                            getThePausedIntoBilling();
+                        }
+
+                    }
+                }
+
+               
+            }
+        }
+
+        public void getThePausedIntoBilling()
+        {
+            CalculateGrandTotal();
+
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                try
+                {
+                    connection.Open();
+                    string query = "INSERT INTO billing(ítem_name, rate, amount, discounted_price) SELECT ítem_name, rate, amount, discounted_price FROM paused_bill";
+
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+
+                    string query1 = "TRUNCATE TABLE `db_stc`.`paused_bill`";
+
+                    using (MySqlCommand command = new MySqlCommand(query1, connection))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+
+
+                    LoadBillingData();
+                    GetRowCount();
+
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error" + ex.Message);
+                }
+            }
+
+            btnPauseBill.Text = "Pause this Bill";
+            btnPauseBill.BackColor = Color.FromArgb(255, 255, 128, 0);
+            btnPauseBill.ForeColor = SystemColors.ControlText;
+        }
+
+        public void sendIntoPaused()
+        {
+            CalculateGrandTotal();
+
+            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            {
+                try
+                {
+                    connection.Open();
+                    string query = "INSERT INTO paused_bill(ítem_name, rate, amount, discounted_price) SELECT ítem_name, rate, amount, discounted_price FROM billing";
+
+                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+
+                    string query1 = "TRUNCATE TABLE `db_stc`.`billing`";
+
+                    using (MySqlCommand command = new MySqlCommand(query1, connection))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+
+
+                    LoadBillingData();
+                    GetRowCount();
+
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error" + ex.Message);
+                }
+            }
+
+            btnPauseBill.Text = "Go to the Previous Bill";
+            btnPauseBill.BackColor = Color.Black;
+            btnPauseBill.ForeColor = SystemColors.Control;
         }
     }
 }

@@ -41,6 +41,7 @@ namespace WindowsFormsApp1
                 txtAddedBy.Text = row.Cells["added_by"].Value?.ToString() ?? string.Empty;
                 txtKeywords.Text = row.Cells["keywords"].Value?.ToString() ?? string.Empty;
                 txtBarcode.Text = row.Cells["barcode"].Value?.ToString() ?? string.Empty;
+                txtCost.Text = row.Cells["cost"].Value?.ToString() ?? string.Empty;
 
             }
         }
@@ -133,7 +134,7 @@ namespace WindowsFormsApp1
                 try
                 {
                     connection.Open();
-                    string query = "INSERT INTO inventory (item_name, retail_price, amount, added_by, keywords, barcode) VALUES (@name, @price, @amount, @added_by, @keywords, @barcode)";
+                    string query = "INSERT INTO inventory (item_name, retail_price, amount, added_by, keywords, barcode, cost) VALUES (@name, @price, @amount, @added_by, @keywords, @barcode, @cost)";
                     using (MySqlCommand command = new MySqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@name", txtItemName.Text);
@@ -142,6 +143,7 @@ namespace WindowsFormsApp1
                         command.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
                         command.Parameters.AddWithValue("@keywords", txtKeywords.Text);
                         command.Parameters.AddWithValue("@barcode", txtBarcode.Text);
+                        command.Parameters.AddWithValue("@cost", txtCost.Text);
                         command.ExecuteNonQuery();
                         MessageBox.Show("Successfully Added!", " New Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -165,6 +167,7 @@ namespace WindowsFormsApp1
             txtAddedBy.Text = string.Empty;
             txtKeywords.Text = string.Empty;
             txtBarcode.Text = string.Empty;
+            txtCost.Text = string.Empty;
 
         }
 
@@ -183,7 +186,7 @@ namespace WindowsFormsApp1
                     try
                     {
                         conn.Open();
-                        string sql = "UPDATE `inventory` SET `item_name`=@item_name,`retail_price`=@price,`amount`=@amount,`added_by`=@added_by,`keywords`=@keywords, `barcode`=@barcode WHERE id = @id";
+                        string sql = "UPDATE `inventory` SET `item_name`=@item_name,`retail_price`=@price,`amount`=@amount,`added_by`=@added_by,`keywords`=@keywords, `barcode`=@barcode, `cost`=@cost  WHERE id = @id";
                         MySqlCommand cmd = new MySqlCommand(sql, conn);
                         cmd.Parameters.AddWithValue("@item_name", txtItemName.Text);
                         cmd.Parameters.AddWithValue("@amount", txtAmount.Text);
@@ -191,6 +194,7 @@ namespace WindowsFormsApp1
                         cmd.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
                         cmd.Parameters.AddWithValue("@keywords", txtKeywords.Text);
                         cmd.Parameters.AddWithValue("@barcode", txtBarcode.Text);
+                        cmd.Parameters.AddWithValue("@cost", txtCost.Text);
 
                         // Add more parameters as needed
                         cmd.Parameters.AddWithValue("@id", dataGridInventory.SelectedRows[0].Cells["id"].Value);

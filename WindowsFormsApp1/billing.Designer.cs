@@ -62,6 +62,7 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.label14 = new System.Windows.Forms.Label();
             this.lblCost = new System.Windows.Forms.Label();
+            this.btnPauseBill = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridBilling)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
@@ -71,11 +72,11 @@
             this.dataGridBilling.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.dataGridBilling.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.dataGridBilling.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridBilling.Location = new System.Drawing.Point(631, 17);
+            this.dataGridBilling.Location = new System.Drawing.Point(631, 98);
             this.dataGridBilling.Name = "dataGridBilling";
             this.dataGridBilling.RowHeadersWidth = 51;
             this.dataGridBilling.RowTemplate.Height = 24;
-            this.dataGridBilling.Size = new System.Drawing.Size(896, 955);
+            this.dataGridBilling.Size = new System.Drawing.Size(896, 874);
             this.dataGridBilling.TabIndex = 20;
             this.dataGridBilling.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridBilling_CellContentClick);
             // 
@@ -262,6 +263,7 @@
             this.listBoxSuggestions.Name = "listBoxSuggestions";
             this.listBoxSuggestions.Size = new System.Drawing.Size(595, 207);
             this.listBoxSuggestions.TabIndex = 1;
+            this.listBoxSuggestions.SelectedIndexChanged += new System.EventHandler(this.listBoxSuggestions_SelectedIndexChanged);
             // 
             // btnDelete
             // 
@@ -368,7 +370,7 @@
             // 
             this.btnScan.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.btnScan.Font = new System.Drawing.Font("Microsoft Sans Serif", 16.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnScan.Location = new System.Drawing.Point(214, 23);
+            this.btnScan.Location = new System.Drawing.Point(214, 18);
             this.btnScan.Name = "btnScan";
             this.btnScan.Size = new System.Drawing.Size(398, 53);
             this.btnScan.TabIndex = 24;
@@ -408,12 +410,25 @@
             this.lblCost.TabIndex = 25;
             this.lblCost.Text = "0";
             // 
+            // btnPauseBill
+            // 
+            this.btnPauseBill.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(0)))));
+            this.btnPauseBill.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPauseBill.Location = new System.Drawing.Point(1220, 18);
+            this.btnPauseBill.Name = "btnPauseBill";
+            this.btnPauseBill.Size = new System.Drawing.Size(307, 53);
+            this.btnPauseBill.TabIndex = 26;
+            this.btnPauseBill.Text = "Pause this Bill";
+            this.btnPauseBill.UseVisualStyleBackColor = false;
+            this.btnPauseBill.Click += new System.EventHandler(this.btnPauseBill_Click);
+            // 
             // billing
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.ClientSize = new System.Drawing.Size(1568, 1055);
+            this.Controls.Add(this.btnPauseBill);
             this.Controls.Add(this.lblCost);
             this.Controls.Add(this.btnScan);
             this.Controls.Add(this.label10);
@@ -494,5 +509,6 @@
         public System.Windows.Forms.Label lblCount;
         private System.Windows.Forms.Label label14;
         private System.Windows.Forms.Label lblCost;
+        private System.Windows.Forms.Button btnPauseBill;
     }
 }

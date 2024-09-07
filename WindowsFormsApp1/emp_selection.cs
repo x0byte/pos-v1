@@ -87,5 +87,10 @@ namespace WindowsFormsApp1
         {
             MessageBox.Show("Please enter the salesmen's name", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+
+        private void cmbEmployee_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
     }
 }

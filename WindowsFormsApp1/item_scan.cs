@@ -38,42 +38,45 @@ namespace WindowsFormsApp1
         }
         private async void txtBarcode_TextChanged(object sender, EventArgs e)
         {
-            // Show the waiting animation
-            lblLoading.Visible = true;
-            lblLoading.Text = "Loading...";
-
-            // Simulate a delay to show the animation (for demo purposes)
-            await Task.Delay(1000); // Adjust or remove this delay in real application
-
-            // Perform the database query asynchronously
-            await Task.Run(() =>
+            if (txtBarcode.Text == "")
             {
-                string query = "SELECT item_name, retail_price FROM inventory WHERE barcode = @barcode";
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
+                // Show the waiting animation
+                lblLoading.Visible = true;
+                lblLoading.Text = "Loading...";
+
+                // Simulate a delay to show the animation (for demo purposes)
+                await Task.Delay(1000); // Adjust or remove this delay in real application
+
+                // Perform the database query asynchronously
+                await Task.Run(() =>
                 {
-                    connection.Open();
-                    MySqlCommand cmd = new MySqlCommand(query, connection);
-                    cmd.Parameters.AddWithValue("@barcode", txtBarcode.Text);
-
-                    MySqlDataReader reader = cmd.ExecuteReader();
-                    if (reader.Read())
+                    string query = "SELECT item_name, retail_price FROM inventory WHERE barcode = @barcode";
+                    using (MySqlConnection connection = new MySqlConnection(connectionString))
                     {
-                        // Update UI with the retrieved data
-                        this.Invoke((Action)(() =>
-                        {
-                            lblItemName.Text = reader["item_name"].ToString();
-                            txtPrice.Text = reader["retail_price"].ToString();
-                            lblItemName.Visible = true;
-                            lblPrice.Visible = true;
-                            txtPrice.Visible=true;
-                        }));
-                    }
-                    reader.Close();
-                }
-            });
+                        connection.Open();
+                        MySqlCommand cmd = new MySqlCommand(query, connection);
+                        cmd.Parameters.AddWithValue("@barcode", txtBarcode.Text);
 
-            // Hide the waiting animation
-            lblLoading.Visible = false;
+                        MySqlDataReader reader = cmd.ExecuteReader();
+                        if (reader.Read())
+                        {
+                            // Update UI with the retrieved data
+                            this.Invoke((Action)(() =>
+                            {
+                                lblItemName.Text = reader["item_name"].ToString();
+                                txtPrice.Text = reader["retail_price"].ToString();
+                                lblItemName.Visible = true;
+                                lblPrice.Visible = true;
+                                txtPrice.Visible = true;
+                            }));
+                        }
+                        reader.Close();
+                    }
+                });
+
+                // Hide the waiting animation
+                lblLoading.Visible = false;
+            }
         }
 
         private void clearTexts()

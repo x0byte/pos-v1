@@ -10,8 +10,14 @@ using System.Windows.Forms;
 using MySql.Data.MySqlClient;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.IO;
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+using iText.IO.Image;
+using iText.Kernel.Geom;
 
 using System.Drawing.Printing;
+using System.Drawing.Imaging;
 
 
 namespace WindowsFormsApp1
@@ -37,7 +43,7 @@ namespace WindowsFormsApp1
 
             dataGridBilling.Font = new Font("Arial", 14);
 
-            checkForPauses(); 
+            checkForPauses();
 
 
         }
@@ -347,19 +353,12 @@ namespace WindowsFormsApp1
 
         private void button2_Click(object sender, EventArgs e)
         {
+           
             DialogResult dialogResult = MessageBox.Show("Are you sure you want to checkout this order?", "Confirmation", MessageBoxButtons.YesNo);
             if (dialogResult == DialogResult.Yes)
             {
                 ReorderBillingTable();
                 LoadBillingData();
-
-                //////////////////////////////////////////
-                /*string salesperson = Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter the salesperson's name:",
-                "Salesperson",
-                "",
-                -1,
-                -1);*/
 
                 string emp_code = loadEmployeeCode();
 
@@ -367,16 +366,18 @@ namespace WindowsFormsApp1
                 if (!string.IsNullOrEmpty(emp_code))
                 {
                     // Proceed with printing the bill, including the salesperson's name
-                    //////////////////////////////////////////
+                    
 
 
                     string cashierName = emp_code; // Update with the actual cashier's name
                     decimal totalAmount = CalculateGrandTotal(); // Update with the actual total amount
                     decimal discountedAmount = totalAmount - decimal.Parse(lblTotalPrice.Text); // Update w ith the actual discounted amount
 
-                    PrintReceipt(dataGridBilling, cashierName, totalAmount, discountedAmount);
-                    ///////////////////////////////////////////
-                    ///
+                    //PrintReceipt(dataGridBilling, cashierName, totalAmount, discountedAmount);
+
+                    PDFConverter converter = new PDFConverter();                  
+
+                    converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountedAmount);
 
                     clearTexts();
                     lblCount.Text = string.Empty;
@@ -672,7 +673,7 @@ namespace WindowsFormsApp1
                 int itemNameColWidth = 100;
                 int rateColWidth = 40;
                 int qtyColWidth = 40;
-                int priceColWidth = 50;
+                //int priceColWidth = 50;
 
                 int idColPos = startX;
                 int itemNameColPos = idColPos + idColWidth + 5;
@@ -701,7 +702,10 @@ namespace WindowsFormsApp1
                     graphics.DrawString(row.Cells[0].Value.ToString(), font, Brushes.Black, idColPos, startY + currentOffsetY);
 
                     // Print Item Name with word wrapping
-                    string itemName = row.Cells[1].Value.ToString();
+                    string itemName = row.Cells[1].Value.ToString() + " (Rs." + row.Cells[2].Value.ToString() + ")";
+
+
+
                     string[] itemNameLines = SplitText(itemName, graphics, font, itemNameColWidth);
                     foreach (string line in itemNameLines)
                     {
@@ -712,8 +716,14 @@ namespace WindowsFormsApp1
                     // Adjust row height if item name has multiple lines
                     rowHeight = Math.Max(rowHeight, currentOffsetY - offsetY);
 
+                    string total_discounted_price = row.Cells[4].Value.ToString();
+                    string amount = row.Cells[3].Value.ToString();
+
+                    decimal ourprice = decimal.Parse(total_discounted_price) / decimal.Parse(amount);
+
+
                     // Print Rate
-                    graphics.DrawString(row.Cells[2].Value.ToString(), font, Brushes.Black, rateColPos, startY + offsetY);
+                    graphics.DrawString(ourprice.ToString(), font, Brushes.Black, rateColPos, startY + offsetY);
 
                     // Print Quantity
                     graphics.DrawString(row.Cells[3].Value.ToString(), font, Brushes.Black, qtyColPos, startY + offsetY);
@@ -741,7 +751,7 @@ namespace WindowsFormsApp1
                 offsetY += 40; // Add some space before the footnotes
                 string returnPolicy = "Returns accepted within 7 days with the receipt";
                 string outroRemarks = "Thank you for shopping with us!";
-                string softwareCompanyInfo = "POS System provided by: BlackBox Computers";
+                string softwareCompanyInfo = "BlackBox Technologies";
                 string softwareCompanyContact = "070 1371 880";
 
                 Font returnFont = new Font("Arial", 8, FontStyle.Bold);
@@ -760,9 +770,20 @@ namespace WindowsFormsApp1
                 graphics.DrawString(softwareCompanyContact, footnoteFont, Brushes.Black, startX + 90, startY + offsetY);
             };
 
-            PrintPreviewDialog printPreviewDialog = new PrintPreviewDialog();
+            /*PrintPreviewDialog printPreviewDialog = new PrintPreviewDialog();
             printPreviewDialog.Document = printDocument;
-            printPreviewDialog.ShowDialog();
+            printPreviewDialog.ShowDialog();*/
+
+            
+
+            /*try
+            {
+                printDocument.Print();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An error occurred while printing the receipt: " + ex.Message);
+            }*/
         }
 
         // Helper method to split text into multiple lines
@@ -853,7 +874,7 @@ namespace WindowsFormsApp1
             if (minimum_price > 0 && billed_price < minimum_price)
             {
                 string password = PromptForPassword();
-                if (password == "saman123") // Replace "your_password" with the actual password
+                if (password == "saman123") 
                 {
                     return true; // Allow the sale to proceed
                 }
@@ -1026,5 +1047,8 @@ namespace WindowsFormsApp1
             btnPauseBill.BackColor = Color.Black;
             btnPauseBill.ForeColor = SystemColors.Control;
         }
+
+
+
     }
 }

@@ -26,7 +26,8 @@ namespace WindowsFormsApp1
             lblPrice.Visible = false;
             txtPrice.Visible = false;
 
-            txtBarcode.TextChanged += txtBarcode_TextChanged;
+            //txtBarcode.TextChanged += txtBarcode_TextChanged;
+            this.txtBarcode.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtBarcode_KeyDown);
 
             this.billingForm = billingForm;
 
@@ -36,16 +37,18 @@ namespace WindowsFormsApp1
         {
 
         }
-        private async void txtBarcode_TextChanged(object sender, EventArgs e)
+
+        private async void txtBarcode_KeyDown(object sender, KeyEventArgs e)
         {
-            if (txtBarcode.Text == "")
+            if (txtBarcode.Text == "") return;
+
+            // Check if the Enter key is pressed
+            if (e.KeyCode == Keys.Enter)
             {
+
                 // Show the waiting animation
                 lblLoading.Visible = true;
                 lblLoading.Text = "Loading...";
-
-                // Simulate a delay to show the animation (for demo purposes)
-                await Task.Delay(1000); // Adjust or remove this delay in real application
 
                 // Perform the database query asynchronously
                 await Task.Run(() =>
@@ -68,6 +71,7 @@ namespace WindowsFormsApp1
                                 lblItemName.Visible = true;
                                 lblPrice.Visible = true;
                                 txtPrice.Visible = true;
+                                txtAmount.Focus(); // Focus on the txtPrice textbox
                             }));
                         }
                         reader.Close();
@@ -76,17 +80,21 @@ namespace WindowsFormsApp1
 
                 // Hide the waiting animation
                 lblLoading.Visible = false;
+
+                // Clear the barcode textbox to prevent duplicate processing
+                txtBarcode.Clear();
             }
         }
 
         private void clearTexts()
         {
-            txtAmount.Text = string.Empty; 
+            txtAmount.Text = string.Empty;
             txtBarcode.Text = string.Empty;
-            txtDisEach.Text = string.Empty;
-            txtDisWhole.Text = string.Empty;
+            txtDisEach.Text = "0";
+            txtDisWhole.Text = "0";
             txtPrice.Text = string.Empty;
             lblFinalPrice.Text = string.Empty;
+            lblItemName.Text = string.Empty;
 
 
             txtBarcode.Focus();

@@ -359,7 +359,7 @@ namespace WindowsFormsApp1
             {
                 ReorderBillingTable();
                 LoadBillingData();
-
+ 
                 string emp_code = loadEmployeeCode();
 
                 // Check if the user clicked OK and entered a name

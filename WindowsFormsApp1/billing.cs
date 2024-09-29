@@ -380,20 +380,20 @@ namespace WindowsFormsApp1
                     converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountedAmount);
 
                     clearTexts();
-                    lblCount.Text = string.Empty;
-                    lblTotalPrice.Text = string.Empty;
+                    //lblCount.Text = string.Empty;
+                    //lblTotalPrice.Text = string.Empty;
 
-                    using (MySqlConnection connection = new MySqlConnection(connectionString))
-                    {
-                        connection.Open();
-                        string query = "TRUNCATE TABLE `db_stc`.`billing`";
+                    //using (MySqlConnection connection = new MySqlConnection(connectionString))
+                    //{
+                    //    connection.Open();
+                    //    string query = "TRUNCATE TABLE `db_stc`.`billing`";
 
 
-                        using (MySqlCommand command = new MySqlCommand(query, connection))
-                        {
-                            command.ExecuteNonQuery();
-                        }
-                    }
+                    //    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    //    {
+                    //        command.ExecuteNonQuery();
+                    //    }
+                    //}
 
                     LoadBillingData();
 
@@ -415,7 +415,7 @@ namespace WindowsFormsApp1
 
         private void button3_Click(object sender, EventArgs e)
         {
-            DialogResult dialogResult = MessageBox.Show("Are you sure you want to cancel this bill?", "Confirmation", MessageBoxButtons.YesNo);
+            DialogResult dialogResult = MessageBox.Show("Are you sure you want to cancel this bill?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
             if (dialogResult == DialogResult.Yes)
             {
 

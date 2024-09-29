@@ -254,3 +254,4 @@ C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsA
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\itext.bouncy-castle-adapter.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\BouncyCastle.Crypto.xml
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\itext.bouncy-castle-adapter.xml
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.print_window.resources

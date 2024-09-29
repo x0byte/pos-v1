@@ -10,6 +10,7 @@ using iText.Kernel.Geom;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Text;
+using WindowsFormsApp1;
 
 public class PDFConverter
 {
@@ -161,15 +162,27 @@ public class PDFConverter
 
 
             // Now, send the bitmap to the printer
-            PrintDocument printDocument = new PrintDocument();
+            //PrintDocument printDocument = new PrintDocument();
 
-            printDocument.PrintPage += (sender, e) =>
-            {
-                e.Graphics.DrawImage(bmp, 0, 0);  // Draw the bitmap to the printer graphics
-            };
+            //printDocument.PrintPage += (sender, e) =>
+            //{
+            //    e.Graphics.DrawImage(bmp, 0, 0);  // Draw the bitmap to the printer graphics
+            //};
 
-            // Print the document
-            printDocument.Print();
+            //// Print the document
+            ////printDocument.Print();
+
+            ////PrintPreviewDialog printPreviewDialog = new PrintPreviewDialog();
+            ////printPreviewDialog.Document = printDocument;
+            ////printPreviewDialog.ShowDialog();
+            ///
+
+            decimal grand_total = totalAmount - discountedAmount;
+
+
+            print_window pw = new print_window(bmp, grand_total, cashierName);
+            pw.ShowDialog();
+
 
             /*
 

@@ -548,7 +548,7 @@ namespace WindowsFormsApp1
                 int printableWidth = e.MarginBounds.Width;
 
                 // Define the company name and font settings
-                string companyName = "Saman Trade Center";
+                string companyName = "";
                 Font companyFont = new Font("Arial", 18, FontStyle.Bold);
 
                 // Define the position to draw the text
@@ -562,8 +562,8 @@ namespace WindowsFormsApp1
                 offsetY = textY + companyFont.Height + 10;
 
                 // Define the address and telephone details
-                string address = "No.20, Matale road, Galewela";
-                string telephone = "066 22 89 468";
+                string address = "";
+                string telephone = "";
                 Font detailsFont = new Font("Arial", 9, FontStyle.Regular);
 
                 // Draw the address on the graphics object
@@ -660,8 +660,8 @@ namespace WindowsFormsApp1
                 offsetY += 40; // Add some space before the footnotes
                 string returnPolicy = "Returns accepted within 14 days with the receipt";
                 string outroRemarks = "Thank you for shopping with us!";
-                string softwareCompanyInfo = "POS System provided by: BlackBox Computers";
-                string softwareCompanyContact = "070 1371 880";
+                string softwareCompanyInfo = "";
+                string softwareCompanyContact = "";
 
                 Font returnFont = new Font("Arial", 8, FontStyle.Bold);
                 Font footnoteFont = new Font("Arial", 8, FontStyle.Regular);

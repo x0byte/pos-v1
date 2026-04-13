@@ -16,7 +16,7 @@ namespace WindowsFormsApp1
 {
     public partial class Inventory_management : Form
     {
-        private string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
+        private string connectionString = DatabaseConfig.ConnectionString;
         public Inventory_management()
         {
             InitializeComponent();

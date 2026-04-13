@@ -14,7 +14,7 @@ namespace WindowsFormsApp1
     public partial class item_scan : Form
     {
         private billing billingForm;
-        private string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
+        private string connectionString = DatabaseConfig.ConnectionString;
 
 
         public item_scan(billing billingForm)

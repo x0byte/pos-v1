@@ -217,7 +217,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="BillHistoryManager.cs" />
+    <Compile Include="DatabaseConfig.cs" />
     <Compile Include="BillHistory.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -274,8 +278,12 @@
       <DependentUpon>print_window.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
+    <Compile Include="UserSession.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlServerTypes\Loader.cs" />
+    <EmbeddedResource Include="AppSettings.resx">
+      <DependentUpon>AppSettings.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="billing.resx">
       <DependentUpon>billing.cs</DependentUpon>
     </EmbeddedResource>

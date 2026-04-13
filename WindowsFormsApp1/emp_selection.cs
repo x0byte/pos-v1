@@ -13,7 +13,7 @@ namespace WindowsFormsApp1
 {
     public partial class emp_selection : Form
     {
-        private string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
+        private string connectionString = DatabaseConfig.ConnectionString;
 
         public string SelectedEmployee { get; private set; }
 

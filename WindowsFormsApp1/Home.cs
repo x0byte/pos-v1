@@ -12,8 +12,15 @@ namespace WindowsFormsApp1
 {
     public partial class Home : Form
     {
-        public Home()
+        private readonly bool isAdmin;
+
+        public Home() : this(UserSession.IsAdmin)
         {
+        }
+
+        public Home(bool isAdmin)
+        {
+            this.isAdmin = isAdmin;
             InitializeComponent();
         }
 
@@ -38,7 +45,8 @@ namespace WindowsFormsApp1
 
         private void Home_Load(object sender, EventArgs e)
         {
-
+            btnSettings.Visible = isAdmin;
+            lblSettings.Visible = isAdmin;
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -59,6 +67,19 @@ namespace WindowsFormsApp1
         {
             Inventory_management im = new Inventory_management();
             im.Show();
+            this.Hide();
+        }
+
+        private void btnSettings_Click(object sender, EventArgs e)
+        {
+            if (!isAdmin)
+            {
+                MessageBox.Show("Only administrators can access settings.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            AppSettings settings = new AppSettings();
+            settings.Show();
             this.Hide();
         }
     }

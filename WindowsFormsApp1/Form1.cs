@@ -14,9 +14,9 @@ namespace WindowsFormsApp1
 {
     public partial class Form1 : Form
     {
-        private string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
         public Form1()
         {
+            DatabaseConfig.Load();
             InitializeComponent();
         }
 
@@ -27,9 +27,11 @@ namespace WindowsFormsApp1
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if(validateLogin(txtName.Text, txtPass.Text))
+            bool isAdmin;
+            if (validateLogin(txtName.Text, txtPass.Text, out isAdmin))
             {
-                Home home = new Home();
+                UserSession.IsAdmin = isAdmin;
+                Home home = new Home(isAdmin);
                 home.Show();
                 this.Hide();
             }
@@ -39,22 +41,27 @@ namespace WindowsFormsApp1
             }
         }
 
-        public bool validateLogin(string username, string password)
+        public bool validateLogin(string username, string password, out bool isAdmin)
         {
+            isAdmin = false;
             try
             {
-                using (MySqlConnection conn = new MySqlConnection(connectionString))
+                using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
                 {
                     conn.Open();
-                    string query = "SELECT COUNT(1) FROM users WHERE username = @username AND password = @password";
+                    string query = "SELECT isAdmin FROM users WHERE username = @username AND password = @password LIMIT 1";
                     MySqlCommand command = new MySqlCommand(query, conn);
 
                     command.Parameters.AddWithValue("@username", txtName.Text);
                     command.Parameters.AddWithValue("@password", txtPass.Text);
 
-                    int count = Convert.ToInt32(command.ExecuteScalar());
-
-                    return count == 1; //if count == 1 -> return true
+                    object result = command.ExecuteScalar();
+                    if (result == null || result == DBNull.Value)
+                    {
+                        return false;
+                    }
+                    isAdmin = Convert.ToInt32(result) == 1;
+                    return true;
 
 
 

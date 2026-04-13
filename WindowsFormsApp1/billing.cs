@@ -25,7 +25,7 @@ namespace WindowsFormsApp1
     public partial class billing : Form
     {
         // Connection string to your MySQL database
-        private string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
+        private string connectionString = DatabaseConfig.ConnectionString;
         private bool isBillPaused;
         private readonly ListBox suggestionListBox;
         private readonly System.Windows.Forms.TextBox textBox;
@@ -562,9 +562,7 @@ namespace WindowsFormsApp1
 
         public void ReorderBillingTable()
         {
-            string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
-
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            using (MySqlConnection connection = new MySqlConnection(DatabaseConfig.ConnectionString))
             {
                 connection.Open();
 

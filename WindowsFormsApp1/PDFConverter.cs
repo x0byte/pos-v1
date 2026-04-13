@@ -145,11 +145,8 @@ public class PDFConverter
 
             offsetY += 100;
             string software_name = "POS System by BlackBox Technologies";
-            string software_contact = "070 1371 880";
 
             graphics.DrawString(software_name, font, Brushes.Black, startX + 105, offsetY);
-            offsetY += (int)fontHeight + 5;
-            graphics.DrawString(software_contact, font, Brushes.Black, startX + 300, offsetY);
 
 
         }

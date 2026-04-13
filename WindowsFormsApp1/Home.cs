@@ -46,7 +46,6 @@ namespace WindowsFormsApp1
         private void Home_Load(object sender, EventArgs e)
         {
             btnSettings.Visible = isAdmin;
-            lblSettings.Visible = isAdmin;
         }
 
         private void button2_Click(object sender, EventArgs e)

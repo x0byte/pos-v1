@@ -217,6 +217,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppCache.cs" />
     <Compile Include="AppSettings.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -228,6 +229,7 @@
     <Compile Include="BillHistory.Designer.cs">
       <DependentUpon>BillHistory.cs</DependentUpon>
     </Compile>
+    <Compile Include="BillItem.cs" />
     <Compile Include="BillDetailView.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -249,6 +251,7 @@
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FallbackBillLogger.cs" />
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>

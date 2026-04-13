@@ -1,5 +1,4 @@
-﻿using MySql.Data.MySqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -13,8 +12,6 @@ namespace WindowsFormsApp1
 {
     public partial class emp_selection : Form
     {
-        private string connectionString = DatabaseConfig.ConnectionString;
-
         public string SelectedEmployee { get; private set; }
 
 
@@ -33,38 +30,12 @@ namespace WindowsFormsApp1
         }
         private void LoadComboBoxData()
         {
-           
-            string query = "SELECT emp_code FROM employee";
-
-            // Create a new connection object
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            cmbEmployee.Items.Clear();
+            foreach (EmployeeItem employee in AppCache.Employees)
             {
-                try
+                if (!string.IsNullOrWhiteSpace(employee.EmpCode))
                 {
-                    // Open the connection
-                    connection.Open();
-
-                    // Create a command to execute the query
-                    using (MySqlCommand cmd = new MySqlCommand(query, connection))
-                    {
-                        // Execute the command and fetch data
-                        using (MySqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                // Assuming the column contains string data
-                                string item = reader["emp_code"].ToString();
-
-                                // Add the item to the ComboBox
-                                cmbEmployee.Items.Add(item);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Handle any errors
-                    MessageBox.Show("Error: " + ex.Message);
+                    cmbEmployee.Items.Add(employee.EmpCode);
                 }
             }
         }

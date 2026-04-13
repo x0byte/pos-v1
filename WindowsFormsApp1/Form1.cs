@@ -17,6 +17,22 @@ namespace WindowsFormsApp1
         public Form1()
         {
             DatabaseConfig.Load();
+            AppCache.Load();
+            Task.Run(() =>
+            {
+                try
+                {
+                    int synced = FallbackBillLogger.RetryUnsynced();
+                    if (synced > 0)
+                    {
+                        this.Invoke((Action)(() =>
+                            MessageBox.Show($"{synced} offline bill(s) successfully synced to cloud.",
+                                "Sync Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                        ));
+                    }
+                }
+                catch { }
+            });
             InitializeComponent();
         }
 

@@ -7,7 +7,7 @@ namespace WindowsFormsApp1
 {
     public static class BillHistoryManager
     {
-        private static readonly string connectionString = "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
+        private static string connectionString => DatabaseConfig.ConnectionString;
 
         public static string SaveBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountedAmount)
         {

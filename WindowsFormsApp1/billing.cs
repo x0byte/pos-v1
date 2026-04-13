@@ -24,11 +24,14 @@ namespace WindowsFormsApp1
 {
     public partial class billing : Form
     {
-        // Connection string to your MySQL database
         private string connectionString = DatabaseConfig.ConnectionString;
-        private bool isBillPaused;
+        private readonly List<BillItem> billItems = new List<BillItem>();
+        private static List<BillItem> pausedBillItems = new List<BillItem>();
+        private int nextRowId = 1;
         private readonly ListBox suggestionListBox;
         private readonly System.Windows.Forms.TextBox textBox;
+        private Label lblStockSync;
+        private System.Windows.Forms.Timer syncTimer;
 
         
         public billing()
@@ -40,12 +43,113 @@ namespace WindowsFormsApp1
             listBoxSuggestions.KeyDown += SuggestionListBox_KeyDown;
 
             this.dataGridBilling.CellClick += new DataGridViewCellEventHandler(this.dataGridView1_CellClick);
+            this.btnPauseBill.Click -= new EventHandler(this.btnPauseBill_Click);
+            this.btnPauseBill.Click += BtnPauseBillInMemory_Click;
 
             dataGridBilling.Font = new Font("Arial", 14);
+            InitializeStockRefreshControls();
+            UpdateStockSyncLabel();
+            UpdateSyncStatusLabel();
+            StartSyncRetryTimer();
 
-            checkForPauses();
+            CheckForPausesInMemory();
 
 
+        }
+        private void InitializeStockRefreshControls()
+        {
+            System.Windows.Forms.Button btnRefreshStock = new System.Windows.Forms.Button
+            {
+                Name = "btnRefreshStock",
+                Text = "Refresh Stock",
+                Size = new Size(140, 36),
+                Location = new System.Drawing.Point(650, 22)
+            };
+            btnRefreshStock.Click += BtnRefreshStock_Click;
+            this.Controls.Add(btnRefreshStock);
+            btnRefreshStock.BringToFront();
+
+            lblStockSync = new Label
+            {
+                Name = "lblStockSync",
+                AutoSize = true,
+                Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Point, 0),
+                Location = new System.Drawing.Point(646, 62)
+            };
+            this.Controls.Add(lblStockSync);
+            lblStockSync.BringToFront();
+
+            Label lblSyncStatus = new Label
+            {
+                Name = "lblSyncStatus",
+                AutoSize = true,
+                Font = new Font("Microsoft Sans Serif", 8F),
+                Location = new System.Drawing.Point(646, 82)
+            };
+            this.Controls.Add(lblSyncStatus);
+            lblSyncStatus.BringToFront();
+        }
+
+        private void BtnRefreshStock_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                AppCache.Refresh();
+                UpdateStockSyncLabel();
+                MessageBox.Show("Stock cache refreshed successfully.", "Refresh Stock", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to refresh stock cache: " + ex.Message, "Refresh Stock", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void UpdateStockSyncLabel()
+        {
+            if (lblStockSync == null)
+            {
+                return;
+            }
+
+            lblStockSync.Text = AppCache.LastSynced == DateTime.MinValue
+                ? "Last synced: never"
+                : "Last synced: " + AppCache.LastSynced.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+
+        private void UpdateSyncStatusLabel()
+        {
+            var lbl = this.Controls.Find("lblSyncStatus", false).FirstOrDefault() as Label;
+            if (lbl == null) return;
+
+            if (FallbackBillLogger.HasUnsyncedBills())
+            {
+                lbl.Text = "Unsynced bills pending";
+                lbl.ForeColor = Color.OrangeRed;
+            }
+            else
+            {
+                lbl.Text = "All bills synced";
+                lbl.ForeColor = Color.Green;
+            }
+        }
+
+        private void StartSyncRetryTimer()
+        {
+            syncTimer = new System.Windows.Forms.Timer();
+            syncTimer.Interval = 3 * 60 * 1000;
+            syncTimer.Tick += (s, ev) =>
+            {
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        FallbackBillLogger.RetryUnsynced();
+                        this.Invoke((Action)UpdateSyncStatusLabel);
+                    }
+                    catch { }
+                });
+            };
+            syncTimer.Start();
         }
         private void TextBox_TextChanged(object sender, EventArgs e)
         {
@@ -82,27 +186,19 @@ namespace WindowsFormsApp1
 
         private List<string> GetSuggestions(string query)
         {
-            List<string> suggestions = new List<string>();
+            string normalized = (query ?? string.Empty).Trim().ToLowerInvariant();
+            string noSpace = normalized.Replace(" ", string.Empty);
 
-            using (MySqlConnection conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-                string sql = "SELECT DISTINCT item_name FROM inventory WHERE item_name LIKE @query OR REPLACE(item_name, ' ', '') LIKE @query OR keywords LIKE @query";
-                using (MySqlCommand cmd = new MySqlCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@query", "%" + query + "%");
-
-                    using (MySqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            suggestions.Add(reader.GetString("item_name"));
-                        }
-                    }
-                }
-            }
-
-            return suggestions;
+            return AppCache.Inventory
+                .Where(item =>
+                    (!string.IsNullOrWhiteSpace(item.ItemName) && item.ItemName.ToLowerInvariant().Contains(normalized)) ||
+                    (!string.IsNullOrWhiteSpace(item.ItemName) && item.ItemName.Replace(" ", string.Empty).ToLowerInvariant().Contains(noSpace)) ||
+                    (!string.IsNullOrWhiteSpace(item.Keywords) && item.Keywords.ToLowerInvariant().Contains(normalized)))
+                .Select(item => item.ItemName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct()
+                .Take(20)
+                .ToList();
         }
 
         private void SuggestionListBox_KeyDown(object sender, KeyEventArgs e)
@@ -120,78 +216,37 @@ namespace WindowsFormsApp1
         }
         private void LoadItemPrice(string itemName)
         {
-            try
+            InventoryItem item = AppCache.Inventory.FirstOrDefault(i =>
+                string.Equals(i.ItemName, itemName, StringComparison.OrdinalIgnoreCase));
+
+            if (item != null)
             {
-                using (MySqlConnection conn = new MySqlConnection(connectionString))
-                {
-                    conn.Open();
-                    string query = "SELECT retail_price FROM inventory WHERE item_name = @itemName";
-                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@itemName", itemName);
-                        object result = cmd.ExecuteScalar();
-                        if (result != null)
-                        {
-                            txtRetailPrice.Text = result.ToString();
-                        }
-                        else
-                        {
-                            txtRetailPrice.Text = "Price: Not available";
-                        }
-                    }
-                }
+                txtRetailPrice.Text = item.RetailPrice.ToString();
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show("An error occurred while fetching the price: " + ex.Message);
+                txtRetailPrice.Text = "Price: Not available";
             }
         }
 
         private void loadItemCost(string itemName)
         {
-            try
+            InventoryItem item = AppCache.Inventory.FirstOrDefault(i =>
+                string.Equals(i.ItemName, itemName, StringComparison.OrdinalIgnoreCase));
+
+            if (item != null && item.Cost.HasValue)
             {
-                using (MySqlConnection conn = new MySqlConnection(connectionString))
-                {
-                    conn.Open();
-                    string query = "SELECT cost FROM inventory WHERE item_name = @itemName";
-                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@itemName", itemName);
-                        object result = cmd.ExecuteScalar();
-                        if (result != null)
-                        {
-                            lblCost.Text = result.ToString();
-                        }
-                        else
-                        {
-                            lblCost.Text = "0";
-                        }
-                    }
-                }
+                lblCost.Text = item.Cost.Value.ToString();
             }
-            catch (Exception ex)
+            else
             {
-                MessageBox.Show("An error occurred while fetching the price: " + ex.Message);
+                lblCost.Text = "0";
             }
         }
 
         private void GetRowCount()
         {
-            int rowCount = 0;
-
-            using (MySqlConnection conn = new MySqlConnection(connectionString))
-            {
-                conn.Open();
-                string sql = $"SELECT COUNT(*) FROM billing";
-
-                using (MySqlCommand cmd = new MySqlCommand(sql, conn))
-                {
-                    rowCount = Convert.ToInt32(cmd.ExecuteScalar());
-                }
-            }
-
-            lblCount.Text = rowCount.ToString();
+            lblCount.Text = billItems.Count.ToString();
         }
 
 
@@ -227,33 +282,28 @@ namespace WindowsFormsApp1
         }
         private void LoadBillingData()
         {
-            try
+            DataTable dataTable = new DataTable();
+            dataTable.Columns.Add("id", typeof(int));
+            dataTable.Columns.Add("ítem_name", typeof(string));
+            dataTable.Columns.Add("rate", typeof(float));
+            dataTable.Columns.Add("amount", typeof(float));
+            dataTable.Columns.Add("discounted_price", typeof(float));
+
+            foreach (BillItem item in billItems)
             {
-                using (MySqlConnection conn = new MySqlConnection(connectionString))
-                {
-                    conn.Open();
-                    string query = "SELECT * FROM billing";
-                    using (MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn))
-                    {
-                        DataTable dataTable = new DataTable();
-                        adapter.Fill(dataTable);
-                        dataGridBilling.DataSource = dataTable;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("An error occurred while fetching data: " + ex.Message);
+                dataTable.Rows.Add(item.RowId, item.ItemName, item.Rate, item.Amount, item.DiscountedPrice);
             }
 
+            dataGridBilling.DataSource = dataTable;
             calculate_Total();
-            CalculateGrandTotal();
+            CalculateGrandTotalFromMemory();
             GetRowCount();
         }
 
         private void billing_Load(object sender, EventArgs e)
         {
             LoadBillingData();
+            UpdateSyncStatusLabel();
         }
 
         private void label2_Click(object sender, EventArgs e)
@@ -263,79 +313,34 @@ namespace WindowsFormsApp1
 
         private void calculate_Total()
         {
-            decimal sum = 0;
-
-            foreach (DataGridViewRow row in dataGridBilling.Rows)
-            {
-                // Ensure the row is not the new row (usually the last row in DataGridView for adding new records)
-                if (row.IsNewRow) continue;
-
-                if (row.Cells["discounted_price"].Value != null)
-                {
-                    if (decimal.TryParse(row.Cells["discounted_price"].Value.ToString(), out decimal value))
-                    {
-                        sum += value;
-                    }
-                }
-            }
-
+            decimal sum = billItems.Sum(item => Convert.ToDecimal(item.DiscountedPrice));
             lblTotalPrice.Text = sum.ToString();
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
+            txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
+            txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
+
+            float retailPrice = float.Parse(txtRetailPrice.Text);
+            float amount = float.Parse(txtAmount.Text);
+
+            float each_discount = float.Parse(txtDisEach.Text);
+            float whole_discount = float.Parse(txtDisWhole.Text);
+
+            float finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
+
+            lblFinalPrice.Text = finalPrice.ToString();
+
+            if (isTheSaleProfitable())
             {
-                txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
-                txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
-
-                float retailPrice = float.Parse(txtRetailPrice.Text);
-                float amount = float.Parse(txtAmount.Text);
-
-                float each_discount = float.Parse(txtDisEach.Text);
-                float whole_discount = float.Parse(txtDisWhole.Text);
-
-                float finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
-
-                lblFinalPrice.Text = finalPrice.ToString();
-
-
-
-                if (isTheSaleProfitable())
-                {
-                    try
-                    {
-                        connection.Open();
-                        string query = "INSERT INTO billing (ítem_name, rate, amount, discounted_price) VALUES (@name, @rate, @amount, @price)";
-                        using (MySqlCommand command = new MySqlCommand(query, connection))
-                        {
-                            command.Parameters.AddWithValue("@name", txtItemName.Text);
-                            command.Parameters.AddWithValue("@rate", txtRetailPrice.Text);
-                            command.Parameters.AddWithValue("@amount", txtAmount.Text);
-                            command.Parameters.AddWithValue("@price", lblFinalPrice.Text);
-                            command.ExecuteNonQuery();
-                            MessageBox.Show("Successfully Added!", " New Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                            clearTexts();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("Error: " + ex.Message);
-                    }
-                }
-
-                else
-                {
-                    MessageBox.Show("This item cannot be added because there's an error with its price.");
-                }
-
-                LoadBillingData();
-                calculate_Total();
-
-                GetRowCount();
-
-
+                AddBillItem(txtItemName.Text, retailPrice, amount, finalPrice);
+                MessageBox.Show("Successfully Added!", " New Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                clearTexts();
+            }
+            else
+            {
+                MessageBox.Show("This item cannot be added because there's an error with its price.");
             }
         }
 
@@ -370,7 +375,7 @@ namespace WindowsFormsApp1
 
 
                     string cashierName = emp_code; // Update with the actual cashier's name
-                    decimal totalAmount = CalculateGrandTotal(); // Update with the actual total amount
+                    decimal totalAmount = CalculateGrandTotalFromMemory(); // Update with the actual total amount
                     decimal discountedAmount = totalAmount - decimal.Parse(lblTotalPrice.Text); // Update w ith the actual discounted amount
 
                     //PrintReceipt(dataGridBilling, cashierName, totalAmount, discountedAmount);
@@ -379,26 +384,29 @@ namespace WindowsFormsApp1
 
                     converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountedAmount);
 
-                    try { BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountedAmount); }
-                    catch (Exception histEx) { MessageBox.Show("Bill printed but history could not be saved: " + histEx.Message, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+                    bool saveCompleted = false;
+                    try
+                    {
+                        BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountedAmount);
+                        saveCompleted = true;
+                    }
+                    catch
+                    {
+                        FallbackBillLogger.LogFailedBill(dataGridBilling, cashierName, totalAmount, discountedAmount);
+                        saveCompleted = true;
+                    }
+
+                    if (saveCompleted)
+                    {
+                        billItems.Clear();
+                        nextRowId = 1;
+                        LoadBillingData();
+                        GetRowCount();
+                        calculate_Total();
+                    }
 
                     clearTexts();
-                    //lblCount.Text = string.Empty;
-                    //lblTotalPrice.Text = string.Empty;
-
-                    //using (MySqlConnection connection = new MySqlConnection(connectionString))
-                    //{
-                    //    connection.Open();
-                    //    string query = "TRUNCATE TABLE `db_stc`.`billing`";
-
-
-                    //    using (MySqlCommand command = new MySqlCommand(query, connection))
-                    //    {
-                    //        command.ExecuteNonQuery();
-                    //    }
-                    //}
-
-                    LoadBillingData();
+                    UpdateSyncStatusLabel();
 
                 }
                 else
@@ -421,16 +429,8 @@ namespace WindowsFormsApp1
             DialogResult dialogResult = MessageBox.Show("Are you sure you want to cancel this bill?", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
             if (dialogResult == DialogResult.Yes)
             {
-
-                using (MySqlConnection connection = new MySqlConnection(connectionString))
-                {
-                    connection.Open();
-                    string query = "TRUNCATE TABLE `db_stc`.`billing`";
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
-                    {
-                        command.ExecuteNonQuery();
-                    }
-                }
+                billItems.Clear();
+                nextRowId = 1;
                 LoadBillingData();
                 clearTexts();
                 lblCount.Text = string.Empty;
@@ -450,17 +450,8 @@ namespace WindowsFormsApp1
                 if (dataGridBilling.SelectedRows.Count > 0)
                 {
                     int selectedId = Convert.ToInt32(dataGridBilling.SelectedRows[0].Cells["id"].Value);
-
-                    using (MySqlConnection conn = new MySqlConnection(connectionString))
-                    {
-                        conn.Open();
-                        string sql = "DELETE FROM billing WHERE id = @id";
-                        using (MySqlCommand cmd = new MySqlCommand(sql, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", selectedId);
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
+                    billItems.RemoveAll(x => x.RowId == selectedId);
+                    ReorderBillingTable();
                     LoadBillingData(); // Reload data to reflect changes
                 }
                 else
@@ -501,31 +492,18 @@ namespace WindowsFormsApp1
                 lblFinalPrice.Text = finalPrice.ToString();
 
 
-                using (MySqlConnection conn = new MySqlConnection(connectionString))
+                if (dataGridBilling.SelectedRows.Count > 0)
                 {
-                    try
+                    int selectedId = Convert.ToInt32(dataGridBilling.SelectedRows[0].Cells["id"].Value);
+                    BillItem billItem = billItems.FirstOrDefault(x => x.RowId == selectedId);
+                    if (billItem != null)
                     {
-                        conn.Open();
-                        string sql = "UPDATE billing SET ítem_name=@item_name, amount=@amount, rate=@rate, discounted_price=@price WHERE id=@id";
-                        MySqlCommand cmd = new MySqlCommand(sql, conn);
-                        cmd.Parameters.AddWithValue("@item_name", txtItemName.Text);
-                        cmd.Parameters.AddWithValue("@amount", txtAmount.Text);
-                        cmd.Parameters.AddWithValue("@rate", txtRetailPrice.Text);
-                        cmd.Parameters.AddWithValue("@price", lblFinalPrice.Text);
-                        // Add more parameters as needed
-                        cmd.Parameters.AddWithValue("@id", dataGridBilling.SelectedRows[0].Cells["id"].Value);
-                        cmd.ExecuteNonQuery();
+                        billItem.ItemName = txtItemName.Text;
+                        billItem.Amount = float.Parse(txtAmount.Text);
+                        billItem.Rate = float.Parse(txtRetailPrice.Text);
+                        billItem.DiscountedPrice = finalPrice;
                         MessageBox.Show("Record updated successfully!");
-
-                        // Refresh DataGridView
-                        MySqlDataAdapter da = new MySqlDataAdapter("SELECT * FROM billing", conn);
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-                        dataGridBilling.DataSource = dt;
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
+                        LoadBillingData();
                     }
                 }
 
@@ -562,54 +540,105 @@ namespace WindowsFormsApp1
 
         public void ReorderBillingTable()
         {
-            using (MySqlConnection connection = new MySqlConnection(DatabaseConfig.ConnectionString))
+            int counter = 1;
+            foreach (BillItem billItem in billItems.OrderBy(x => x.RowId))
             {
-                connection.Open();
-
-                using (MySqlCommand command = connection.CreateCommand())
-                {
-                    MySqlTransaction transaction = connection.BeginTransaction();
-                    command.Transaction = transaction;
-
-                    try
-                    {
-                        //Create a temporary table
-                        command.CommandText = @"
-                    CREATE TEMPORARY TABLE temp_table AS SELECT ítem_name, rate, amount, discounted_price FROM billing WHERE 1=0;";
-                        command.ExecuteNonQuery();
-
-                        //Copy data to the temporary table
-                        command.CommandText = @"
-                    INSERT INTO temp_table (ítem_name, rate, amount, discounted_price)
-                    SELECT item_name, rate, amount, discounted_price
-                    FROM billing
-                    ORDER BY id;";
-                        command.ExecuteNonQuery();
-
-                        //Truncate the original table
-                        command.CommandText = "TRUNCATE TABLE billing;";
-                        command.ExecuteNonQuery();
-
-                        //Copy data back to the original table
-                        command.CommandText = @"
-                    INSERT INTO billing (ítem_name, rate, amount, discounted_price)
-                    SELECT item_name, rate, amount, discounted_price
-                    FROM temp_table;";
-                        command.ExecuteNonQuery();
-
-                        //Drop the temporary table
-                        command.CommandText = "DROP TEMPORARY TABLE temp_table;";
-                        command.ExecuteNonQuery();
-
-                        transaction.Commit();
-                    }
-                    catch
-                    {
-                        transaction.Rollback();
-                        //throw new Exception("An error occurred while reordering the billing table.", ex);
-                    }
-                }
+                billItem.RowId = counter++;
             }
+            nextRowId = counter;
+        }
+
+        private decimal CalculateGrandTotalFromMemory()
+        {
+            decimal grandTotal = 0;
+            foreach (BillItem item in billItems)
+            {
+                grandTotal += Convert.ToDecimal(item.Rate) * Convert.ToDecimal(item.Amount);
+            }
+            return grandTotal;
+        }
+
+        public int BillItemCount => billItems.Count;
+
+        public void RefreshBillingView()
+        {
+            LoadBillingData();
+        }
+
+        public void AddBillItem(string itemName, float rate, float amount, float discountedPrice)
+        {
+            billItems.Add(new BillItem
+            {
+                RowId = nextRowId++,
+                ItemName = itemName,
+                Rate = rate,
+                Amount = amount,
+                DiscountedPrice = discountedPrice
+            });
+            LoadBillingData();
+            GetRowCount();
+            calculate_Total();
+        }
+
+        private void BtnPauseBillInMemory_Click(object sender, EventArgs e)
+        {
+            DialogResult dialogResult = MessageBox.Show("Are you sure you want to make that change?  ", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (dialogResult != DialogResult.Yes)
+            {
+                return;
+            }
+
+            if (btnPauseBill.Text == "Pause this Bill")
+            {
+                pausedBillItems = billItems.Select(CloneBillItem).ToList();
+                billItems.Clear();
+                nextRowId = 1;
+                LoadBillingData();
+                btnPauseBill.Text = "Go to the Previous Bill";
+                btnPauseBill.BackColor = Color.Black;
+                btnPauseBill.ForeColor = SystemColors.Control;
+                return;
+            }
+
+            billItems.Clear();
+            billItems.AddRange(pausedBillItems.Select(CloneBillItem));
+            pausedBillItems.Clear();
+            ReorderBillingTable();
+            LoadBillingData();
+            btnPauseBill.Text = "Pause this Bill";
+            btnPauseBill.BackColor = Color.FromArgb(255, 255, 128, 0);
+            btnPauseBill.ForeColor = SystemColors.ControlText;
+        }
+
+        private void CheckForPausesInMemory()
+        {
+            if (pausedBillItems.Count == 0)
+            {
+                return;
+            }
+
+            DialogResult result = MessageBox.Show("There is another bill paused in the system. Do you want to access it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (result == DialogResult.Yes)
+            {
+                billItems.Clear();
+                billItems.AddRange(pausedBillItems.Select(CloneBillItem));
+                pausedBillItems.Clear();
+                ReorderBillingTable();
+                LoadBillingData();
+            }
+        }
+
+        private static BillItem CloneBillItem(BillItem item)
+        {
+            return new BillItem
+            {
+                RowId = item.RowId,
+                ItemName = item.ItemName,
+                Rate = item.Rate,
+                Amount = item.Amount,
+                DiscountedPrice = item.DiscountedPrice
+            };
         }
 
         //////////////////////////////////////////////////////////////////////////PRINTING/////////////////////////////////////////////////////////////////////////
@@ -753,7 +782,6 @@ namespace WindowsFormsApp1
                 string returnPolicy = "Returns accepted within 7 days with the receipt";
                 string outroRemarks = "Thank you for shopping with us!";
                 string softwareCompanyInfo = "BlackBox Technologies";
-                string softwareCompanyContact = "070 1371 880";
 
                 Font returnFont = new Font("Arial", 8, FontStyle.Bold);
                 Font footnoteFont = new Font("Arial", 8, FontStyle.Regular);
@@ -767,8 +795,7 @@ namespace WindowsFormsApp1
                 offsetY += 25;
 
                 graphics.DrawString(softwareCompanyInfo, footnoteFont, Brushes.Black, startX + 10, startY + offsetY);
-                offsetY += (int)footnoteFontHeight + 5;
-                graphics.DrawString(softwareCompanyContact, footnoteFont, Brushes.Black, startX + 90, startY + offsetY);
+
             };
 
             /*PrintPreviewDialog printPreviewDialog = new PrintPreviewDialog();

@@ -379,6 +379,9 @@ namespace WindowsFormsApp1
 
                     converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountedAmount);
 
+                    try { BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountedAmount); }
+                    catch (Exception histEx) { MessageBox.Show("Bill printed but history could not be saved: " + histEx.Message, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+
                     clearTexts();
                     //lblCount.Text = string.Empty;
                     //lblTotalPrice.Text = string.Empty;

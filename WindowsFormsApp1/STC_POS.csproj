@@ -58,7 +58,7 @@
     <GenerateManifests>true</GenerateManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <SignManifests>true</SignManifests>
+    <SignManifests>false</SignManifests>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BouncyCastle.Crypto, Version=1.9.0.0, Culture=neutral, PublicKeyToken=0e99375e54769942, processorArchitecture=MSIL">
@@ -217,6 +217,19 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BillHistoryManager.cs" />
+    <Compile Include="BillHistory.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BillHistory.Designer.cs">
+      <DependentUpon>BillHistory.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BillDetailView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BillDetailView.Designer.cs">
+      <DependentUpon>BillDetailView.cs</DependentUpon>
+    </Compile>
     <Compile Include="billing.cs">
       <SubType>Form</SubType>
     </Compile>

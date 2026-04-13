@@ -43,7 +43,9 @@ namespace WindowsFormsApp1
 
         private void button2_Click(object sender, EventArgs e)
         {
-
+            BillHistory bh = new BillHistory();
+            bh.Show();
+            this.Hide();
         }
 
         private void pictureBox2_Click(object sender, EventArgs e)

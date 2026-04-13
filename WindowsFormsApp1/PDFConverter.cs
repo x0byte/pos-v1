@@ -172,10 +172,7 @@ public class PDFConverter
             //// Print the document
             ////printDocument.Print();
 
-            ////PrintPreviewDialog printPreviewDialog = new PrintPreviewDialog();
-            ////printPreviewDialog.Document = printDocument;
-            ////printPreviewDialog.ShowDialog();
-            ///
+            
 
             decimal grand_total = totalAmount - discountedAmount;
 
@@ -183,27 +180,6 @@ public class PDFConverter
             print_window pw = new print_window(bmp, grand_total, cashierName);
             pw.ShowDialog();
 
-
-            /*
-
-            // Create a PDF document using iText
-            using (PdfWriter writer = new PdfWriter(pdfFilePath))
-            {
-                PdfDocument pdfDoc = new PdfDocument(writer);
-                Document document = new Document(pdfDoc, new PageSize(pdfWidthInInches * 72, pdfHeightInInches * 72));  // Correct size in points
-
-                // Remove margins from the PDF document
-                document.SetMargins(0, 0, 0, 0);
-
-                // Create an iText Image object from the ImageData
-                iText.Layout.Element.Image pdfImage = new iText.Layout.Element.Image(imageData);
-
-                // Add the image to the PDF document
-                document.Add(pdfImage);
-
-                // Close the document
-                document.Close();
-            }*/
         }
 
     }

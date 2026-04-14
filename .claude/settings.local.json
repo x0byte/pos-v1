@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c '\"C:\\\\Program Files \\(x86\\)\\\\Microsoft Visual Studio\\\\2019\\\\Community\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" STC_POS.csproj /p:Configuration=Debug /t:Build /v:minimal 2>&1')",
+      "Read(//c/Program Files \\(x86\\)/Microsoft Visual Studio\" 2>/dev/**)",
+      "Bash(where msbuild:*)",
+      "Bash(\"/c/Windows/Microsoft.NET/Framework/v4.0.30319/MSBuild.exe\" STC_POS.csproj /p:Configuration=Debug /t:Build /v:minimal)",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\MSI\\\\Desktop\\\\pos-v1-beta-experiment\\\\pos-v1-beta-experiment\\\\WindowsFormsApp1 && C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\MSBuild.exe STC_POS.csproj /p:Configuration=Debug /t:Build /v:minimal\")"
+    ]
+  }
+}

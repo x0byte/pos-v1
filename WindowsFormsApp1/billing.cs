@@ -63,7 +63,7 @@ namespace WindowsFormsApp1
                 Name = "btnRefreshStock",
                 Text = "Refresh Stock",
                 Size = new Size(140, 36),
-                Location = new System.Drawing.Point(650, 22)
+                Location = new System.Drawing.Point(650, 20)
             };
             btnRefreshStock.Click += BtnRefreshStock_Click;
             this.Controls.Add(btnRefreshStock);
@@ -74,7 +74,7 @@ namespace WindowsFormsApp1
                 Name = "lblStockSync",
                 AutoSize = true,
                 Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Point, 0),
-                Location = new System.Drawing.Point(646, 62)
+                Location = new System.Drawing.Point(475, 20)
             };
             this.Controls.Add(lblStockSync);
             lblStockSync.BringToFront();
@@ -84,7 +84,7 @@ namespace WindowsFormsApp1
                 Name = "lblSyncStatus",
                 AutoSize = true,
                 Font = new Font("Microsoft Sans Serif", 8F),
-                Location = new System.Drawing.Point(646, 82)
+                Location = new System.Drawing.Point(475, 40)
             };
             this.Controls.Add(lblSyncStatus);
             lblSyncStatus.BringToFront();
@@ -559,6 +559,16 @@ namespace WindowsFormsApp1
         }
 
         public int BillItemCount => billItems.Count;
+
+        public void ClearCurrentBillForPendingLoad()
+        {
+            billItems.Clear();
+            nextRowId = 1;
+            LoadBillingData();
+            clearTexts();
+            lblCount.Text = string.Empty;
+            lblTotalPrice.Text = string.Empty;
+        }
 
         public void RefreshBillingView()
         {

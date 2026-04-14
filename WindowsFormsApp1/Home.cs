@@ -46,6 +46,7 @@ namespace WindowsFormsApp1
         private void Home_Load(object sender, EventArgs e)
         {
             btnSettings.Visible = isAdmin;
+            btnPendingBills.Visible = isAdmin;
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -80,6 +81,20 @@ namespace WindowsFormsApp1
             AppSettings settings = new AppSettings();
             settings.Show();
             this.Hide();
+        }
+
+        private void BtnPendingBills_Click(object sender, EventArgs e)
+        {
+            if (!UserSession.IsAdmin)
+            {
+                MessageBox.Show("Only administrators can access pending bills.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using (PendingBillsInbox inbox = new PendingBillsInbox())
+            {
+                inbox.ShowDialog(this);
+            }
         }
     }
 }

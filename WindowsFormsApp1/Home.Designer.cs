@@ -40,6 +40,7 @@
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.label5 = new System.Windows.Forms.Label();
             this.btnSettings = new System.Windows.Forms.Button();
+            this.btnPendingBills = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             this.SuspendLayout();
@@ -152,9 +153,9 @@
             this.label5.TabIndex = 9;
             this.label5.Text = "User Logout";
             this.label5.Click += new System.EventHandler(this.label5_Click);
-            // 
+            //
             // btnSettings
-            // 
+            //
             this.btnSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSettings.Location = new System.Drawing.Point(35, 636);
             this.btnSettings.Name = "btnSettings";
@@ -164,12 +165,25 @@
             this.btnSettings.UseVisualStyleBackColor = true;
             this.btnSettings.Visible = false;
             this.btnSettings.Click += new System.EventHandler(this.btnSettings_Click);
+            //
+            // btnPendingBills
+            //
+            this.btnPendingBills.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPendingBills.Location = new System.Drawing.Point(175, 636);
+            this.btnPendingBills.Name = "btnPendingBills";
+            this.btnPendingBills.Size = new System.Drawing.Size(170, 56);
+            this.btnPendingBills.TabIndex = 11;
+            this.btnPendingBills.Text = "Pending Bills";
+            this.btnPendingBills.UseVisualStyleBackColor = true;
+            this.btnPendingBills.Visible = false;
+            this.btnPendingBills.Click += new System.EventHandler(this.BtnPendingBills_Click);
             // 
             // Home
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1106, 729);
+            this.Controls.Add(this.btnPendingBills);
             this.Controls.Add(this.btnSettings);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.pictureBox2);
@@ -206,5 +220,6 @@
         private System.Windows.Forms.PictureBox pictureBox2;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Button btnSettings;
+        private System.Windows.Forms.Button btnPendingBills;
     }
 }

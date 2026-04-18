@@ -17,7 +17,7 @@ namespace WindowsFormsApp1
 
         private void InitializeComponent()
         {
-            this.btnBack = new System.Windows.Forms.Button();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(BillHistory));
             this.lblTitle = new System.Windows.Forms.Label();
             this.lblFrom = new System.Windows.Forms.Label();
             this.dtpFrom = new System.Windows.Forms.DateTimePicker();
@@ -30,27 +30,18 @@ namespace WindowsFormsApp1
             this.dataGridHistory = new System.Windows.Forms.DataGridView();
             this.lblDeveloper = new System.Windows.Forms.Label();
             this.lblHint = new System.Windows.Forms.Label();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridHistory)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
-            // 
-            // btnBack
-            // 
-            this.btnBack.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnBack.Location = new System.Drawing.Point(12, 12);
-            this.btnBack.Name = "btnBack";
-            this.btnBack.Size = new System.Drawing.Size(130, 50);
-            this.btnBack.TabIndex = 0;
-            this.btnBack.Text = "← Home";
-            this.btnBack.UseVisualStyleBackColor = true;
-            this.btnBack.Click += new System.EventHandler(this.btnBack_Click);
             // 
             // lblTitle
             // 
             this.lblTitle.AutoSize = true;
             this.lblTitle.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblTitle.Location = new System.Drawing.Point(160, 18);
+            this.lblTitle.Location = new System.Drawing.Point(108, 21);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(175, 36);
+            this.lblTitle.Size = new System.Drawing.Size(169, 36);
             this.lblTitle.TabIndex = 1;
             this.lblTitle.Text = "Bill History";
             // 
@@ -60,7 +51,7 @@ namespace WindowsFormsApp1
             this.lblFrom.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblFrom.Location = new System.Drawing.Point(12, 82);
             this.lblFrom.Name = "lblFrom";
-            this.lblFrom.Size = new System.Drawing.Size(56, 25);
+            this.lblFrom.Size = new System.Drawing.Size(61, 25);
             this.lblFrom.TabIndex = 2;
             this.lblFrom.Text = "From";
             // 
@@ -79,7 +70,7 @@ namespace WindowsFormsApp1
             this.lblTo.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTo.Location = new System.Drawing.Point(265, 82);
             this.lblTo.Name = "lblTo";
-            this.lblTo.Size = new System.Drawing.Size(31, 25);
+            this.lblTo.Size = new System.Drawing.Size(38, 25);
             this.lblTo.TabIndex = 4;
             this.lblTo.Text = "To";
             // 
@@ -98,7 +89,7 @@ namespace WindowsFormsApp1
             this.lblSearchLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblSearchLabel.Location = new System.Drawing.Point(510, 82);
             this.lblSearchLabel.Name = "lblSearchLabel";
-            this.lblSearchLabel.Size = new System.Drawing.Size(136, 25);
+            this.lblSearchLabel.Size = new System.Drawing.Size(143, 25);
             this.lblSearchLabel.TabIndex = 6;
             this.lblSearchLabel.Text = "Bill ID / Name";
             // 
@@ -147,6 +138,16 @@ namespace WindowsFormsApp1
             this.dataGridHistory.Size = new System.Drawing.Size(1540, 870);
             this.dataGridHistory.TabIndex = 10;
             // 
+            // lblDeveloper
+            // 
+            this.lblDeveloper.AutoSize = true;
+            this.lblDeveloper.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblDeveloper.Location = new System.Drawing.Point(1142, 1003);
+            this.lblDeveloper.Name = "lblDeveloper";
+            this.lblDeveloper.Size = new System.Drawing.Size(401, 20);
+            this.lblDeveloper.TabIndex = 12;
+            this.lblDeveloper.Text = "Developed and Maintained by BlackBox Computers™";
+            // 
             // lblHint
             // 
             this.lblHint.AutoSize = true;
@@ -158,21 +159,23 @@ namespace WindowsFormsApp1
             this.lblHint.TabIndex = 11;
             this.lblHint.Text = "Double-click a bill to view full details";
             // 
-            // lblDeveloper
+            // pictureBox1
             // 
-            this.lblDeveloper.AutoSize = true;
-            this.lblDeveloper.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblDeveloper.Location = new System.Drawing.Point(1142, 1003);
-            this.lblDeveloper.Name = "lblDeveloper";
-            this.lblDeveloper.Size = new System.Drawing.Size(401, 20);
-            this.lblDeveloper.TabIndex = 12;
-            this.lblDeveloper.Text = "Developed and Maintained by BlackBox Computers™";
+            this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
+            this.pictureBox1.Location = new System.Drawing.Point(17, 10);
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.Size = new System.Drawing.Size(63, 62);
+            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.pictureBox1.TabIndex = 23;
+            this.pictureBox1.TabStop = false;
+            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
             // BillHistory
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1568, 1055);
+            this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.lblDeveloper);
             this.Controls.Add(this.lblHint);
             this.Controls.Add(this.dataGridHistory);
@@ -185,7 +188,6 @@ namespace WindowsFormsApp1
             this.Controls.Add(this.dtpFrom);
             this.Controls.Add(this.lblFrom);
             this.Controls.Add(this.lblTitle);
-            this.Controls.Add(this.btnBack);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
             this.Name = "BillHistory";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
@@ -193,13 +195,13 @@ namespace WindowsFormsApp1
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.BillHistory_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridHistory)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
+
         }
 
         #endregion
-
-        private System.Windows.Forms.Button btnBack;
         private System.Windows.Forms.Label lblTitle;
         private System.Windows.Forms.Label lblFrom;
         private System.Windows.Forms.DateTimePicker dtpFrom;
@@ -212,5 +214,6 @@ namespace WindowsFormsApp1
         private System.Windows.Forms.DataGridView dataGridHistory;
         private System.Windows.Forms.Label lblHint;
         private System.Windows.Forms.Label lblDeveloper;
+        private System.Windows.Forms.PictureBox pictureBox1;
     }
 }

@@ -28,6 +28,7 @@ namespace WindowsFormsApp1
         private readonly List<BillItem> billItems = new List<BillItem>();
         private static List<BillItem> pausedBillItems = new List<BillItem>();
         private int nextRowId = 1;
+        private DateTime billCreatedAt = DateTime.Now;
         private readonly ListBox suggestionListBox;
         private readonly System.Windows.Forms.TextBox textBox;
         private Label lblStockSync;
@@ -43,8 +44,6 @@ namespace WindowsFormsApp1
             listBoxSuggestions.KeyDown += SuggestionListBox_KeyDown;
 
             this.dataGridBilling.CellClick += new DataGridViewCellEventHandler(this.dataGridView1_CellClick);
-            this.btnPauseBill.Click -= new EventHandler(this.btnPauseBill_Click);
-            this.btnPauseBill.Click += BtnPauseBillInMemory_Click;
 
             dataGridBilling.Font = new Font("Arial", 14);
             InitializeStockRefreshControls();
@@ -285,13 +284,14 @@ namespace WindowsFormsApp1
             DataTable dataTable = new DataTable();
             dataTable.Columns.Add("id", typeof(int));
             dataTable.Columns.Add("ítem_name", typeof(string));
+            // Keep float columns so PDFConverter cell parsing is unchanged
             dataTable.Columns.Add("rate", typeof(float));
             dataTable.Columns.Add("amount", typeof(float));
             dataTable.Columns.Add("discounted_price", typeof(float));
 
             foreach (BillItem item in billItems)
             {
-                dataTable.Rows.Add(item.RowId, item.ItemName, item.Rate, item.Amount, item.DiscountedPrice);
+                dataTable.Rows.Add(item.RowId, item.ItemName, (float)item.Rate, (float)item.Amount, (float)item.DiscountedPrice);
             }
 
             dataGridBilling.DataSource = dataTable;
@@ -313,7 +313,7 @@ namespace WindowsFormsApp1
 
         private void calculate_Total()
         {
-            decimal sum = billItems.Sum(item => Convert.ToDecimal(item.DiscountedPrice));
+            decimal sum = billItems.Sum(item => item.DiscountedPrice);
             lblTotalPrice.Text = sum.ToString();
         }
 
@@ -322,14 +322,12 @@ namespace WindowsFormsApp1
             txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
             txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
 
-            float retailPrice = float.Parse(txtRetailPrice.Text);
-            float amount = float.Parse(txtAmount.Text);
+            decimal retailPrice = decimal.Parse(txtRetailPrice.Text);
+            decimal amount = decimal.Parse(txtAmount.Text);
+            decimal each_discount = decimal.Parse(txtDisEach.Text);
+            decimal whole_discount = decimal.Parse(txtDisWhole.Text);
 
-            float each_discount = float.Parse(txtDisEach.Text);
-            float whole_discount = float.Parse(txtDisWhole.Text);
-
-            float finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
-
+            decimal finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
             lblFinalPrice.Text = finalPrice.ToString();
 
             if (isTheSaleProfitable())
@@ -374,37 +372,31 @@ namespace WindowsFormsApp1
                     
 
 
-                    string cashierName = emp_code; // Update with the actual cashier's name
-                    decimal totalAmount = CalculateGrandTotalFromMemory(); // Update with the actual total amount
-                    decimal discountedAmount = totalAmount - decimal.Parse(lblTotalPrice.Text); // Update w ith the actual discounted amount
+                    string cashierName = emp_code;
+                    decimal totalAmount = CalculateGrandTotalFromMemory();
+                    decimal discountedAmount = totalAmount - decimal.Parse(lblTotalPrice.Text);
 
-                    //PrintReceipt(dataGridBilling, cashierName, totalAmount, discountedAmount);
-
-                    PDFConverter converter = new PDFConverter();                  
-
-                    converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountedAmount);
-
-                    bool saveCompleted = false;
+                    // Save first so the bill code is available for the receipt
+                    string billCode;
                     try
                     {
-                        BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountedAmount);
-                        saveCompleted = true;
+                        billCode = BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountedAmount);
                     }
                     catch
                     {
                         FallbackBillLogger.LogFailedBill(dataGridBilling, cashierName, totalAmount, discountedAmount);
-                        saveCompleted = true;
+                        billCode = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
                     }
 
-                    if (saveCompleted)
-                    {
-                        billItems.Clear();
-                        nextRowId = 1;
-                        LoadBillingData();
-                        GetRowCount();
-                        calculate_Total();
-                    }
+                    PDFConverter converter = new PDFConverter();
+                    converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountedAmount, billCode, billCreatedAt);
 
+                    billItems.Clear();
+                    nextRowId = 1;
+                    billCreatedAt = DateTime.Now;
+                    LoadBillingData();
+                    GetRowCount();
+                    calculate_Total();
                     clearTexts();
                     UpdateSyncStatusLabel();
 
@@ -431,6 +423,7 @@ namespace WindowsFormsApp1
             {
                 billItems.Clear();
                 nextRowId = 1;
+                billCreatedAt = DateTime.Now;
                 LoadBillingData();
                 clearTexts();
                 lblCount.Text = string.Empty;
@@ -481,16 +474,13 @@ namespace WindowsFormsApp1
                 txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
                 txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
 
-                int retailPrice = int.Parse(txtRetailPrice.Text);
-                float amount = float.Parse(txtAmount.Text);
+                decimal retailPrice = decimal.Parse(txtRetailPrice.Text);
+                decimal amount = decimal.Parse(txtAmount.Text);
+                decimal each_discount = decimal.Parse(txtDisEach.Text);
+                decimal whole_discount = decimal.Parse(txtDisWhole.Text);
 
-                float each_discount = int.Parse(txtDisEach.Text);
-                float whole_discount = int.Parse(txtDisWhole.Text);
-
-                float finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
-
+                decimal finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
                 lblFinalPrice.Text = finalPrice.ToString();
-
 
                 if (dataGridBilling.SelectedRows.Count > 0)
                 {
@@ -499,8 +489,8 @@ namespace WindowsFormsApp1
                     if (billItem != null)
                     {
                         billItem.ItemName = txtItemName.Text;
-                        billItem.Amount = float.Parse(txtAmount.Text);
-                        billItem.Rate = float.Parse(txtRetailPrice.Text);
+                        billItem.Amount = decimal.Parse(txtAmount.Text);
+                        billItem.Rate = decimal.Parse(txtRetailPrice.Text);
                         billItem.DiscountedPrice = finalPrice;
                         MessageBox.Show("Record updated successfully!");
                         LoadBillingData();
@@ -553,7 +543,7 @@ namespace WindowsFormsApp1
             decimal grandTotal = 0;
             foreach (BillItem item in billItems)
             {
-                grandTotal += Convert.ToDecimal(item.Rate) * Convert.ToDecimal(item.Amount);
+                grandTotal += item.Rate * item.Amount;
             }
             return grandTotal;
         }
@@ -564,6 +554,7 @@ namespace WindowsFormsApp1
         {
             billItems.Clear();
             nextRowId = 1;
+            billCreatedAt = DateTime.Now;
             LoadBillingData();
             clearTexts();
             lblCount.Text = string.Empty;
@@ -575,7 +566,7 @@ namespace WindowsFormsApp1
             LoadBillingData();
         }
 
-        public void AddBillItem(string itemName, float rate, float amount, float discountedPrice)
+        public void AddBillItem(string itemName, decimal rate, decimal amount, decimal discountedPrice)
         {
             billItems.Add(new BillItem
             {
@@ -850,37 +841,6 @@ namespace WindowsFormsApp1
         }
 
 
-        public decimal CalculateGrandTotal()
-        {
-            decimal grand_total = 0;
-
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
-            {
-                try
-                {
-                    connection.Open();
-
-                    string query = "SELECT rate, amount FROM billing";
-                    MySqlCommand cmd = new MySqlCommand(query, connection);
-
-                    using (MySqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            decimal rate = reader.GetDecimal("rate");
-                            decimal amount = reader.GetDecimal("amount");
-                            grand_total += rate * amount;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("An error occurred: " + ex.Message);
-                }
-            }
-
-            return grand_total;
-        }
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
@@ -905,16 +865,26 @@ namespace WindowsFormsApp1
         {
             lblCost.Text = string.IsNullOrEmpty(lblCost.Text) ? "0" : lblCost.Text;
 
-
-            double minimum_price = double.Parse(lblCost.Text) * double.Parse(txtAmount.Text);
-            double billed_price = double.Parse(lblFinalPrice.Text);
+            decimal minimum_price = decimal.Parse(lblCost.Text) * decimal.Parse(txtAmount.Text);
+            decimal billed_price = decimal.Parse(lblFinalPrice.Text);
 
             if (minimum_price > 0 && billed_price < minimum_price)
             {
-                string password = PromptForPassword();
-                if (password == "saman123") 
+                string configuredPassword = DatabaseConfig.OverridePassword;
+                if (string.IsNullOrEmpty(configuredPassword))
                 {
-                    return true; // Allow the sale to proceed
+                    System.Windows.Forms.MessageBox.Show(
+                        "This sale is below cost and no override password is configured.\nAsk an administrator to set the override password in config.json.",
+                        "Override Not Available",
+                        System.Windows.Forms.MessageBoxButtons.OK,
+                        System.Windows.Forms.MessageBoxIcon.Error);
+                    return false;
+                }
+
+                string password = PromptForPassword();
+                if (password == configuredPassword)
+                {
+                    return true;
                 }
                 else
                 {
@@ -923,7 +893,7 @@ namespace WindowsFormsApp1
                 }
             }
 
-            return true; // Sale is profitable, proceed as normal
+            return true;
         }
 
         private string PromptForPassword()
@@ -958,133 +928,6 @@ namespace WindowsFormsApp1
 
         }
 
-        private void btnPauseBill_Click(object sender, EventArgs e)
-        {
-
-            DialogResult dialogResult = MessageBox.Show("Are you sure you want to make that change?  ", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            if (dialogResult == DialogResult.Yes)
-            {
-                if (btnPauseBill.Text == "Pause this Bill")
-                {
-                    sendIntoPaused();
-                }
-
-                else if (btnPauseBill.Text == "Go to the Previous Bill")
-                {                   
-                    getThePausedIntoBilling();
-                }
-
-
-            }
-        }
-
-        public void checkForPauses()
-        {
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
-            {
-                connection.Open();
-
-                string query = "SELECT * FROM paused_bill";
-
-                using (MySqlDataAdapter adaptor = new MySqlDataAdapter(query, connection))
-                {
-                    DataTable datatable = new DataTable();
-                    adaptor.Fill(datatable);
-
-
-                    if (datatable.Rows.Count != 0)
-                    {
-                        DialogResult result = MessageBox.Show("There is another bill paused in the system. Do you want to access it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                        if (result == DialogResult.Yes)
-                        {
-                            getThePausedIntoBilling();
-                        }
-
-                    }
-                }
-
-               
-            }
-        }
-
-        public void getThePausedIntoBilling()
-        {
-            CalculateGrandTotal();
-
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
-            {
-                try
-                {
-                    connection.Open();
-                    string query = "INSERT INTO billing(ítem_name, rate, amount, discounted_price) SELECT ítem_name, rate, amount, discounted_price FROM paused_bill";
-
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
-                    {
-                        command.ExecuteNonQuery();
-                    }
-
-                    string query1 = "TRUNCATE TABLE `db_stc`.`paused_bill`";
-
-                    using (MySqlCommand command = new MySqlCommand(query1, connection))
-                    {
-                        command.ExecuteNonQuery();
-                    }
-
-
-                    LoadBillingData();
-                    GetRowCount();
-
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error" + ex.Message);
-                }
-            }
-
-            btnPauseBill.Text = "Pause this Bill";
-            btnPauseBill.BackColor = Color.FromArgb(255, 255, 128, 0);
-            btnPauseBill.ForeColor = SystemColors.ControlText;
-        }
-
-        public void sendIntoPaused()
-        {
-            CalculateGrandTotal();
-
-            using (MySqlConnection connection = new MySqlConnection(connectionString))
-            {
-                try
-                {
-                    connection.Open();
-                    string query = "INSERT INTO paused_bill(ítem_name, rate, amount, discounted_price) SELECT ítem_name, rate, amount, discounted_price FROM billing";
-
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
-                    {
-                        command.ExecuteNonQuery();
-                    }
-
-                    string query1 = "TRUNCATE TABLE `db_stc`.`billing`";
-
-                    using (MySqlCommand command = new MySqlCommand(query1, connection))
-                    {
-                        command.ExecuteNonQuery();
-                    }
-
-
-                    LoadBillingData();
-                    GetRowCount();
-
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error" + ex.Message);
-                }
-            }
-
-            btnPauseBill.Text = "Go to the Previous Bill";
-            btnPauseBill.BackColor = Color.Black;
-            btnPauseBill.ForeColor = SystemColors.Control;
-        }
 
 
 

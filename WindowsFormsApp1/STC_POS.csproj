@@ -236,6 +236,9 @@
     <Compile Include="BillDetailView.Designer.cs">
       <DependentUpon>BillDetailView.cs</DependentUpon>
     </Compile>
+    <Compile Include="PendingBillDetailView.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="billing.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -252,6 +255,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FallbackBillLogger.cs" />
+    <Compile Include="KeywordGenerator.cs" />
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
@@ -289,6 +293,9 @@
     <Compile Include="SqlServerTypes\Loader.cs" />
     <EmbeddedResource Include="AppSettings.resx">
       <DependentUpon>AppSettings.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="BillHistory.resx">
+      <DependentUpon>BillHistory.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="billing.resx">
       <DependentUpon>billing.cs</DependentUpon>

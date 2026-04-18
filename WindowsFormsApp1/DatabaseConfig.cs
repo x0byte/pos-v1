@@ -15,6 +15,7 @@ namespace WindowsFormsApp1
             public string Database { get; set; }
             public string Uid { get; set; }
             public string Pwd { get; set; }
+            public string OverridePassword { get; set; }
         }
 
         private static readonly string ConfigFilePath =
@@ -22,6 +23,12 @@ namespace WindowsFormsApp1
 
         public static string ConnectionString { get; private set; } =
             "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
+
+        /// <summary>
+        /// Password required to override a below-cost sale. Set via config.json (OverridePassword field).
+        /// If not configured, overrides are not permitted until the admin sets it.
+        /// </summary>
+        public static string OverridePassword { get; private set; }
 
         public static void Load()
         {
@@ -46,6 +53,7 @@ namespace WindowsFormsApp1
                     config.Uid,
                     config.Pwd
                 );
+                OverridePassword = config.OverridePassword;
             }
             catch
             {
@@ -69,7 +77,8 @@ namespace WindowsFormsApp1
                 Port = finalPort,
                 Database = finalDatabase,
                 Uid = finalUid,
-                Pwd = finalPwd
+                Pwd = finalPwd,
+                OverridePassword = OverridePassword  // preserve existing value across DB config saves
             };
 
             string json = JsonConvert.SerializeObject(config, Formatting.Indented);

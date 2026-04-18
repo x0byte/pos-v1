@@ -19,20 +19,25 @@ namespace WindowsFormsApp1
             {
                 connection.Open();
 
-                using (MySqlCommand inventoryCommand = new MySqlCommand("SELECT id, item_name, retail_price, cost, barcode, keywords FROM inventory", connection))
+                using (MySqlCommand inventoryCommand = new MySqlCommand(
+                    "SELECT id, item_name, retail_price, cost, barcode, keywords FROM inventory", connection))
                 using (MySqlDataReader reader = inventoryCommand.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        inventoryItems.Add(new InventoryItem
+                        var item = new InventoryItem
                         {
                             Id = reader["id"] != DBNull.Value ? Convert.ToInt32(reader["id"]) : 0,
                             ItemName = reader["item_name"]?.ToString(),
-                            RetailPrice = reader["retail_price"] != DBNull.Value ? Convert.ToDouble(reader["retail_price"]) : 0,
-                            Cost = reader["cost"] != DBNull.Value ? (double?)Convert.ToDouble(reader["cost"]) : null,
+                            RetailPrice = reader["retail_price"] != DBNull.Value ? Convert.ToDecimal(reader["retail_price"]) : 0m,
+                            Cost = reader["cost"] != DBNull.Value ? (decimal?)Convert.ToDecimal(reader["cost"]) : null,
                             Barcode = reader["barcode"]?.ToString(),
                             Keywords = reader["keywords"]?.ToString()
-                        });
+                        };
+                        // Augment in-memory keywords with auto-generated aliases so
+                        // existing items benefit without requiring a DB update.
+                        item.Keywords = KeywordGenerator.MergeWithGenerated(item.Keywords, item.ItemName);
+                        inventoryItems.Add(item);
                     }
                 }
 
@@ -86,8 +91,8 @@ namespace WindowsFormsApp1
     {
         public int Id { get; set; }
         public string ItemName { get; set; }
-        public double RetailPrice { get; set; }
-        public double? Cost { get; set; }
+        public decimal RetailPrice { get; set; }
+        public decimal? Cost { get; set; }
         public string Barcode { get; set; }
         public string Keywords { get; set; }
     }

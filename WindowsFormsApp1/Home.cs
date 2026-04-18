@@ -91,10 +91,9 @@ namespace WindowsFormsApp1
                 return;
             }
 
-            using (PendingBillsInbox inbox = new PendingBillsInbox())
-            {
-                inbox.ShowDialog(this);
-            }
+            PendingBillsInbox inbox = new PendingBillsInbox();
+            inbox.Show();
+            this.Hide();
         }
     }
 }

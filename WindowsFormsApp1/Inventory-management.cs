@@ -141,7 +141,7 @@ namespace WindowsFormsApp1
                         command.Parameters.AddWithValue("@price", txtPrice.Text);
                         command.Parameters.AddWithValue("@amount", txtAmount.Text);
                         command.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
-                        command.Parameters.AddWithValue("@keywords", txtKeywords.Text);
+                        command.Parameters.AddWithValue("@keywords", KeywordGenerator.MergeWithGenerated(txtKeywords.Text, txtItemName.Text));
                         command.Parameters.AddWithValue("@barcode", txtBarcode.Text);
                         command.Parameters.AddWithValue("@cost", txtCost.Text);
                         command.ExecuteNonQuery();
@@ -192,7 +192,7 @@ namespace WindowsFormsApp1
                         cmd.Parameters.AddWithValue("@amount", txtAmount.Text);
                         cmd.Parameters.AddWithValue("@price", txtPrice.Text);
                         cmd.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
-                        cmd.Parameters.AddWithValue("@keywords", txtKeywords.Text);
+                        cmd.Parameters.AddWithValue("@keywords", KeywordGenerator.MergeWithGenerated(txtKeywords.Text, txtItemName.Text));
                         cmd.Parameters.AddWithValue("@barcode", txtBarcode.Text);
                         cmd.Parameters.AddWithValue("@cost", txtCost.Text);
 

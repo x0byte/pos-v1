@@ -4,8 +4,8 @@ namespace WindowsFormsApp1
     {
         public int RowId { get; set; }
         public string ItemName { get; set; }
-        public float Rate { get; set; }
-        public float Amount { get; set; }
-        public float DiscountedPrice { get; set; }
+        public decimal Rate { get; set; }
+        public decimal Amount { get; set; }
+        public decimal DiscountedPrice { get; set; }
     }
 }

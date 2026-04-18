@@ -121,16 +121,17 @@ namespace WindowsFormsApp1
             LoadHistory();
         }
 
-        private void btnBack_Click(object sender, EventArgs e)
-        {
-            Home home = new Home();
-            home.Show();
-            this.Hide();
-        }
 
         private void BillHistory_Load(object sender, EventArgs e)
         {
             LoadHistory();
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+            Home home = new Home();
+            home.Show();
+            this.Hide();
         }
     }
 }

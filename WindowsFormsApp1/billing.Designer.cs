@@ -78,6 +78,7 @@
             this.dataGridBilling.RowTemplate.Height = 24;
             this.dataGridBilling.Size = new System.Drawing.Size(896, 874);
             this.dataGridBilling.TabIndex = 20;
+            this.dataGridBilling.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridBilling.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridBilling_CellContentClick);
             // 
             // label1
@@ -420,7 +421,7 @@
             this.btnPauseBill.TabIndex = 26;
             this.btnPauseBill.Text = "Pause this Bill";
             this.btnPauseBill.UseVisualStyleBackColor = false;
-            this.btnPauseBill.Click += new System.EventHandler(this.btnPauseBill_Click);
+            this.btnPauseBill.Click += new System.EventHandler(this.BtnPauseBillInMemory_Click);
             // 
             // billing
             // 

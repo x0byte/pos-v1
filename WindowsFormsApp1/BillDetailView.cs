@@ -119,9 +119,11 @@ namespace WindowsFormsApp1
                     decimal totalAmount = Convert.ToDecimal(billHeader["total_amount"]);
                     decimal discountAmount = Convert.ToDecimal(billHeader["discount_amount"]);
                     string salesperson = billHeader["salesperson"].ToString();
+                    string billCodeStr = billHeader["bill_code"].ToString();
+                    DateTime billDateTimeVal = Convert.ToDateTime(billHeader["date_time"]);
 
                     PDFConverter converter = new PDFConverter();
-                    converter.ConvertPrintDocumentToPdf(dataGridItems, salesperson, totalAmount, discountAmount);
+                    converter.ConvertPrintDocumentToPdf(dataGridItems, salesperson, totalAmount, discountAmount, billCodeStr, billDateTimeVal);
                 }
                 catch (Exception ex)
                 {

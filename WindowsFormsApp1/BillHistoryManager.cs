@@ -76,6 +76,65 @@ namespace WindowsFormsApp1
             }
         }
 
+        public static string SaveBillFromDataTable(string salesperson, decimal totalAmount, decimal discountAmount, DataTable itemsTable)
+        {
+            decimal grandTotal = totalAmount - discountAmount;
+            int itemCount = itemsTable.Rows.Count;
+
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                MySqlTransaction transaction = conn.BeginTransaction();
+                try
+                {
+                    string insertHeader = @"INSERT INTO bill_history
+                        (bill_code, date_time, salesperson, total_amount, discount_amount, grand_total, item_count)
+                        VALUES ('', @date_time, @salesperson, @total_amount, @discount_amount, @grand_total, @item_count)";
+
+                    MySqlCommand cmd = new MySqlCommand(insertHeader, conn, transaction);
+                    cmd.Parameters.AddWithValue("@date_time", DateTime.Now);
+                    cmd.Parameters.AddWithValue("@salesperson", salesperson);
+                    cmd.Parameters.AddWithValue("@total_amount", totalAmount);
+                    cmd.Parameters.AddWithValue("@discount_amount", discountAmount);
+                    cmd.Parameters.AddWithValue("@grand_total", grandTotal);
+                    cmd.Parameters.AddWithValue("@item_count", itemCount);
+                    cmd.ExecuteNonQuery();
+
+                    long billId = cmd.LastInsertedId;
+                    string billCode = "STC-" + billId.ToString("D5");
+
+                    string updateCode = "UPDATE bill_history SET bill_code = @bill_code WHERE bill_id = @bill_id";
+                    MySqlCommand updateCmd = new MySqlCommand(updateCode, conn, transaction);
+                    updateCmd.Parameters.AddWithValue("@bill_code", billCode);
+                    updateCmd.Parameters.AddWithValue("@bill_id", billId);
+                    updateCmd.ExecuteNonQuery();
+
+                    foreach (DataRow row in itemsTable.Rows)
+                    {
+                        string insertItem = @"INSERT INTO bill_history_items
+                            (bill_id, item_name, rate, amount, discounted_price)
+                            VALUES (@bill_id, @item_name, @rate, @amount, @discounted_price)";
+
+                        MySqlCommand itemCmd = new MySqlCommand(insertItem, conn, transaction);
+                        itemCmd.Parameters.AddWithValue("@bill_id", billId);
+                        itemCmd.Parameters.AddWithValue("@item_name", row["item_name"]?.ToString() ?? "");
+                        itemCmd.Parameters.AddWithValue("@rate", row["rate"]);
+                        itemCmd.Parameters.AddWithValue("@amount", row["amount"]);
+                        itemCmd.Parameters.AddWithValue("@discounted_price", row["discounted_price"]);
+                        itemCmd.ExecuteNonQuery();
+                    }
+
+                    transaction.Commit();
+                    return billCode;
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+        }
+
         public static DataTable GetBillHistory()
         {
             using (MySqlConnection conn = new MySqlConnection(connectionString))

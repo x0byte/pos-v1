@@ -102,13 +102,13 @@ namespace WindowsFormsApp1
             txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
             txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
 
-            float retailPrice = float.Parse(txtPrice.Text);
-            float amount = float.Parse(txtAmount.Text);
+            decimal retailPrice = decimal.Parse(txtPrice.Text);
+            decimal amount = decimal.Parse(txtAmount.Text);
 
-            float each_discount = float.Parse(txtDisEach.Text);
-            float whole_discount = float.Parse(txtDisWhole.Text);
+            decimal each_discount = decimal.Parse(txtDisEach.Text);
+            decimal whole_discount = decimal.Parse(txtDisWhole.Text);
 
-            float finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
+            decimal finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
 
             lblFinalPrice.Text = finalPrice.ToString();
 

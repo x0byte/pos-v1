@@ -130,6 +130,7 @@ namespace WindowsFormsApp1
             if (row.Cells["id"]?.Value == null) return;
 
             int pendingBillId = Convert.ToInt32(row.Cells["id"].Value);
+            string sessionId = row.Cells["session_id"]?.Value?.ToString() ?? "";
             string cashierCode = row.Cells["cashier_code"]?.Value?.ToString() ?? "";
             DateTime createdAt = DateTime.Now;
             if (row.Cells["created_at"]?.Value != null && row.Cells["created_at"].Value != DBNull.Value)
@@ -138,7 +139,7 @@ namespace WindowsFormsApp1
             }
             string note = row.Cells["note"]?.Value?.ToString() ?? "";
 
-            using (PendingBillDetailView detailView = new PendingBillDetailView(pendingBillId, cashierCode, createdAt, note, cancelledStatus))
+            using (PendingBillDetailView detailView = new PendingBillDetailView(pendingBillId, sessionId, cashierCode, createdAt, note, cancelledStatus))
             {
                 detailView.ShowDialog(this);
 

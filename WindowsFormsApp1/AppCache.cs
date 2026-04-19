@@ -41,6 +41,11 @@ namespace WindowsFormsApp1
                     }
                 }
 
+                if (inventoryItems.Count == 0)
+                {
+                    Console.WriteLine("WARNING: inventory query succeeded but returned zero rows.");
+                }
+
                 try
                 {
                     using (MySqlCommand employeeCommand = new MySqlCommand("SELECT emp_code, emp_name FROM employee", connection))

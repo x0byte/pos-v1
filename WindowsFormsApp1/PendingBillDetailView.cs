@@ -18,12 +18,14 @@ namespace WindowsFormsApp1
     {
         // ── State ─────────────────────────────────────────────────────────────────
         private readonly int pendingBillId;
+        private readonly string sessionId;
         private readonly string cashierCode;
         private readonly DateTime createdAt;
         private readonly string note;
         private readonly string cancelledStatus;
         private readonly string connectionString = DatabaseConfig.ConnectionString;
         private readonly List<PendingBillItemRow> items = new List<PendingBillItemRow>();
+        private string _printSubmissionId;
 
         /// <summary>True when the bill was printed or cancelled (list should refresh).</summary>
         public bool BillWasRemoved { get; private set; }
@@ -38,9 +40,10 @@ namespace WindowsFormsApp1
         private Label lblGrandTotal;
 
         // ── Constructor ───────────────────────────────────────────────────────────
-        public PendingBillDetailView(int pendingBillId, string cashierCode, DateTime createdAt, string note, string cancelledStatus)
+        public PendingBillDetailView(int pendingBillId, string sessionId, string cashierCode, DateTime createdAt, string note, string cancelledStatus)
         {
             this.pendingBillId = pendingBillId;
+            this.sessionId = sessionId;
             this.cashierCode = cashierCode;
             this.createdAt = createdAt;
             this.note = note;
@@ -292,7 +295,7 @@ namespace WindowsFormsApp1
             }
 
             string code = cashierCode;
-            if (string.IsNullOrWhiteSpace(code)) code = PromptForEmployeeCode();
+            if (string.IsNullOrWhiteSpace(code)) code = PromptForEmployeeCode(cashierCode);
             if (string.IsNullOrWhiteSpace(code))
             {
                 MessageBox.Show("Please enter the salesperson's name to proceed.",
@@ -300,8 +303,19 @@ namespace WindowsFormsApp1
                 return;
             }
 
+            if (_printSubmissionId == null)
+                _printSubmissionId = Guid.NewGuid().ToString();
+
             try
             {
+                DesktopPosLocalAudit.SavePendingSnapshot(GetSnapshotSessionId(), items.Select(item => new PendingBillSnapshotLine
+                {
+                    ItemName = item.ItemName,
+                    Rate = item.Rate,
+                    Amount = item.Qty,
+                    DiscountedPrice = item.Price
+                }));
+
                 DataGridView printGrid = BuildTemporaryGrid();
                 decimal totalAmount    = items.Sum(i => i.Rate * i.Qty);
                 decimal discountAmount = totalAmount - items.Sum(i => i.Price);
@@ -310,11 +324,24 @@ namespace WindowsFormsApp1
                 try
                 {
                     DataTable dt = BuildItemsDataTable();
-                    billCode = BillHistoryManager.SaveBillFromDataTable(code, totalAmount, discountAmount, dt);
+                    billCode = BillHistoryManager.SaveBillFromDataTable(code, totalAmount, discountAmount, dt, _printSubmissionId);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    FallbackBillLogger.LogFailedBill(printGrid, code, totalAmount, discountAmount);
+                    DialogResult fallbackChoice = MessageBox.Show(
+                        "Bill save failed.\n\n"
+                        + ex.Message
+                        + "\n\nQueue this bill offline and print with a LOCAL code instead?",
+                        "Database Save Failed",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Error);
+
+                    if (fallbackChoice != DialogResult.Yes)
+                    {
+                        throw;
+                    }
+
+                    FallbackBillLogger.LogFailedBill(printGrid, code, totalAmount, discountAmount, null);
                     billCode = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
                 }
 
@@ -360,9 +387,18 @@ namespace WindowsFormsApp1
 
             try
             {
+                DesktopPosLocalAudit.SavePendingSnapshot(GetSnapshotSessionId(), items.Select(item => new PendingBillSnapshotLine
+                {
+                    ItemName = item.ItemName,
+                    Rate = item.Rate,
+                    Amount = item.Qty,
+                    DiscountedPrice = item.Price
+                }));
+
                 billingForm.ClearCurrentBillForPendingLoad();
                 foreach (PendingBillItemRow item in items)
                     billingForm.AddBillItem(item.ItemName, item.Rate, item.Qty, item.Price);
+                billingForm.SetPendingBillContext(cashierCode, GetSnapshotSessionId());
 
                 RemovePendingBill();
 
@@ -448,9 +484,14 @@ namespace WindowsFormsApp1
             }
         }
 
-        private string PromptForEmployeeCode()
+        private string GetSnapshotSessionId()
         {
-            using (emp_selection form = new emp_selection())
+            return string.IsNullOrWhiteSpace(sessionId) ? "pending-" + pendingBillId : sessionId;
+        }
+
+        private string PromptForEmployeeCode(string preferredEmployeeCode)
+        {
+            using (emp_selection form = new emp_selection(preferredEmployeeCode))
             {
                 if (form.ShowDialog() == DialogResult.OK)
                     return form.SelectedEmployee;

@@ -12,6 +12,7 @@ namespace WindowsFormsApp1
         private TextBox txtDatabase;
         private TextBox txtUsername;
         private TextBox txtPassword;
+        private TextBox txtOverridePassword;
         private Button btnTestConnection;
         private Button btnSave;
         private Button btnBack;
@@ -27,7 +28,7 @@ namespace WindowsFormsApp1
             this.Text = "Settings";
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedToolWindow;
-            this.ClientSize = new Size(700, 500);
+            this.ClientSize = new Size(700, 580);
             this.Font = new Font("Microsoft Sans Serif", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
 
             Label header = new Label
@@ -54,11 +55,14 @@ namespace WindowsFormsApp1
             AddLabel("Password", 280);
             txtPassword = AddTextBox(250, 280, true);
 
+            AddLabel("Override Password", 330);
+            txtOverridePassword = AddTextBox(250, 330, true);
+
             btnTestConnection = new Button
             {
                 Text = "Test Connection",
                 Size = new Size(150, 45),
-                Location = new Point(120, 360)
+                Location = new Point(120, 420)
             };
             btnTestConnection.Click += BtnTestConnection_Click;
 
@@ -66,7 +70,7 @@ namespace WindowsFormsApp1
             {
                 Text = "Save",
                 Size = new Size(150, 45),
-                Location = new Point(280, 360)
+                Location = new Point(280, 420)
             };
             btnSave.Click += BtnSave_Click;
 
@@ -74,7 +78,7 @@ namespace WindowsFormsApp1
             {
                 Text = "Back",
                 Size = new Size(150, 45),
-                Location = new Point(440, 360)
+                Location = new Point(440, 420)
             };
             btnBack.Click += BtnBack_Click;
 
@@ -91,6 +95,7 @@ namespace WindowsFormsApp1
             txtDatabase.Text = values.ContainsKey("database") ? values["database"] : string.Empty;
             txtUsername.Text = values.ContainsKey("uid") ? values["uid"] : string.Empty;
             txtPassword.Text = values.ContainsKey("pwd") ? values["pwd"] : string.Empty;
+            txtOverridePassword.Text = DatabaseConfig.OverridePassword ?? string.Empty;
         }
 
         private void BtnTestConnection_Click(object sender, EventArgs e)
@@ -120,7 +125,8 @@ namespace WindowsFormsApp1
                     txtPort.Text,
                     txtDatabase.Text,
                     txtUsername.Text,
-                    txtPassword.Text
+                    txtPassword.Text,
+                    txtOverridePassword.Text
                 );
                 MessageBox.Show("Database settings saved successfully.", "Saved", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }

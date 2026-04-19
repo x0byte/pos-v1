@@ -186,22 +186,79 @@ namespace WindowsFormsApp1
                     try
                     {
                         conn.Open();
-                        string sql = "UPDATE `inventory` SET `item_name`=@item_name,`retail_price`=@price,`amount`=@amount,`added_by`=@added_by,`keywords`=@keywords, `barcode`=@barcode, `cost`=@cost  WHERE id = @id";
-                        MySqlCommand cmd = new MySqlCommand(sql, conn);
-                        cmd.Parameters.AddWithValue("@item_name", txtItemName.Text);
-                        cmd.Parameters.AddWithValue("@amount", txtAmount.Text);
-                        cmd.Parameters.AddWithValue("@price", txtPrice.Text);
-                        cmd.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
-                        cmd.Parameters.AddWithValue("@keywords", KeywordGenerator.MergeWithGenerated(txtKeywords.Text, txtItemName.Text));
-                        cmd.Parameters.AddWithValue("@barcode", txtBarcode.Text);
-                        cmd.Parameters.AddWithValue("@cost", txtCost.Text);
+                        using (MySqlTransaction tx = conn.BeginTransaction())
+                        {
+                            int itemId = Convert.ToInt32(dataGridInventory.SelectedRows[0].Cells["id"].Value);
+                            decimal? oldCost = null;
+                            using (MySqlCommand oldCostCmd = new MySqlCommand("SELECT cost FROM inventory WHERE id = @id", conn, tx))
+                            {
+                                oldCostCmd.Parameters.AddWithValue("@id", itemId);
+                                object oldCostObj = oldCostCmd.ExecuteScalar();
+                                if (oldCostObj != null && oldCostObj != DBNull.Value)
+                                {
+                                    oldCost = Convert.ToDecimal(oldCostObj);
+                                }
+                            }
 
-                        // Add more parameters as needed
-                        cmd.Parameters.AddWithValue("@id", dataGridInventory.SelectedRows[0].Cells["id"].Value);
-                        cmd.ExecuteNonQuery();
+                            decimal? newCost = string.IsNullOrWhiteSpace(txtCost.Text) ? (decimal?)null : decimal.Parse(txtCost.Text);
+                            decimal? changePct = null;
+                            bool warningFlagged = false;
+                            if (oldCost.HasValue && oldCost.Value != 0m && newCost.HasValue)
+                            {
+                                changePct = ((newCost.Value - oldCost.Value) / oldCost.Value) * 100m;
+                                warningFlagged = Math.Abs(changePct.Value) > 2m;
+                            }
+
+                            if (warningFlagged)
+                            {
+                                DialogResult costWarning = MessageBox.Show(
+                                    "Cost change of " + changePct.Value.ToString("N2") + "% detected. Continue?",
+                                    "Cost Change Warning",
+                                    MessageBoxButtons.YesNo,
+                                    MessageBoxIcon.Warning);
+                                if (costWarning != DialogResult.Yes)
+                                {
+                                    tx.Rollback();
+                                    return;
+                                }
+                            }
+
+                            string sql = "UPDATE `inventory` SET `item_name`=@item_name,`retail_price`=@price,`amount`=@amount,`added_by`=@added_by,`keywords`=@keywords, `barcode`=@barcode, `cost`=@cost  WHERE id = @id";
+                            MySqlCommand cmd = new MySqlCommand(sql, conn, tx);
+                            cmd.Parameters.AddWithValue("@item_name", txtItemName.Text);
+                            cmd.Parameters.AddWithValue("@amount", txtAmount.Text);
+                            cmd.Parameters.AddWithValue("@price", txtPrice.Text);
+                            cmd.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
+                            cmd.Parameters.AddWithValue("@keywords", KeywordGenerator.MergeWithGenerated(txtKeywords.Text, txtItemName.Text));
+                            cmd.Parameters.AddWithValue("@barcode", txtBarcode.Text);
+                            cmd.Parameters.AddWithValue("@cost", newCost.HasValue ? (object)newCost.Value : DBNull.Value);
+                            cmd.Parameters.AddWithValue("@id", itemId);
+
+                            using (MySqlCommand historyCmd = new MySqlCommand(
+                                @"INSERT INTO inventory_cost_history
+                                  (item_id, item_name, old_cost, new_cost, change_pct, source,
+                                   source_reference_id, changed_at, changed_by_user_id,
+                                   changed_by_username, warning_flagged)
+                                  VALUES
+                                  (@item_id, @item_name, @old_cost, @new_cost, @change_pct, 'desktop_inventory_edit',
+                                   NULL, NOW(), NULL, @changed_by_username, @warning_flagged)", conn, tx))
+                            {
+                                historyCmd.Parameters.AddWithValue("@item_id", itemId);
+                                historyCmd.Parameters.AddWithValue("@item_name", txtItemName.Text);
+                                historyCmd.Parameters.AddWithValue("@old_cost", oldCost.HasValue ? (object)oldCost.Value : DBNull.Value);
+                                historyCmd.Parameters.AddWithValue("@new_cost", newCost.HasValue ? (object)newCost.Value : DBNull.Value);
+                                historyCmd.Parameters.AddWithValue("@change_pct", changePct.HasValue ? (object)changePct.Value : DBNull.Value);
+                                historyCmd.Parameters.AddWithValue("@changed_by_username", UserSession.Username ?? "desktop-pos");
+                                historyCmd.Parameters.AddWithValue("@warning_flagged", warningFlagged ? 1 : 0);
+                                historyCmd.ExecuteNonQuery();
+                            }
+
+                            cmd.ExecuteNonQuery();
+                            tx.Commit();
+                        }
+
                         MessageBox.Show("Record updated successfully!");
 
-                        // Refresh DataGridView
                         MySqlDataAdapter da = new MySqlDataAdapter("SELECT * FROM inventory", conn);
                         DataTable dt = new DataTable();
                         da.Fill(dt);

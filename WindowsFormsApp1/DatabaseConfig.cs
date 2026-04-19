@@ -36,6 +36,7 @@ namespace WindowsFormsApp1
             {
                 if (!File.Exists(ConfigFilePath))
                 {
+                    Console.WriteLine("WARNING: config.json was not found. Falling back to the built-in database defaults.");
                     return;
                 }
 
@@ -54,14 +55,19 @@ namespace WindowsFormsApp1
                     config.Pwd
                 );
                 OverridePassword = config.OverridePassword;
+                if (string.Equals(OverridePassword, "admin123", StringComparison.Ordinal))
+                {
+                    Console.WriteLine("WARNING: OverridePassword is still set to the sample default value 'admin123'.");
+                }
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine("WARNING: config.json could not be loaded. Falling back to defaults. " + ex.Message);
                 // Keep default connection string when config is invalid.
             }
         }
 
-        public static void Save(string server, string port, string database, string uid, string pwd)
+        public static void Save(string server, string port, string database, string uid, string pwd, string overridePassword = null)
         {
             string finalServer = string.IsNullOrWhiteSpace(server) ? "127.0.0.1" : server.Trim();
             string finalPort = (port ?? string.Empty).Trim();
@@ -70,6 +76,8 @@ namespace WindowsFormsApp1
             string finalPwd = pwd ?? string.Empty;
 
             ConnectionString = BuildConnectionString(finalServer, finalPort, finalDatabase, finalUid, finalPwd);
+            if (overridePassword != null)
+                OverridePassword = overridePassword;
 
             var config = new DbConfig
             {
@@ -78,7 +86,7 @@ namespace WindowsFormsApp1
                 Database = finalDatabase,
                 Uid = finalUid,
                 Pwd = finalPwd,
-                OverridePassword = OverridePassword  // preserve existing value across DB config saves
+                OverridePassword = OverridePassword
             };
 
             string json = JsonConvert.SerializeObject(config, Formatting.Indented);

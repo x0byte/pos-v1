@@ -14,7 +14,7 @@ using WindowsFormsApp1;
 
 public class PDFConverter
 {
-    public void ConvertPrintDocumentToPdf(DataGridView dataGridView, string cashierName, decimal totalAmount, decimal discountedAmount, string billCode, DateTime billDateTime)
+    public void ConvertPrintDocumentToPdf(DataGridView dataGridView, string cashierName, decimal totalAmount, decimal discountAmount, string billCode, DateTime billDateTime)
     {
         // Define the dimensions of the PDF in points (DPI adjusted to 300 DPI)
         float pdfWidthInInches = 2.85f;  // 2.85 inches for width (approximately 285 points)
@@ -117,14 +117,14 @@ public class PDFConverter
 
             Font discount_font = new Font("Arial", 9, FontStyle.Bold);
 
-            if (discountedAmount != 0)
+            if (discountAmount != 0)
             {
-                graphics.DrawString($"Discount Rs.: {discountedAmount:N2}", discount_font, Brushes.Black, startX + 25, offsetY);
+                graphics.DrawString($"Discount Rs.: {discountAmount:N2}", discount_font, Brushes.Black, startX + 25, offsetY);
                 offsetY += (int)fontHeight + 5;
             }
 
             Font total_font = new Font("Arial", 11, FontStyle.Bold);
-            graphics.DrawString($"Grand Total Rs.: {(totalAmount - discountedAmount):N2}", total_font, Brushes.Black, startX + 25, offsetY);
+            graphics.DrawString($"Grand Total Rs.: {(totalAmount - discountAmount):N2}", total_font, Brushes.Black, startX + 25, offsetY);
 
             // Draw footnotes
             offsetY += 90;
@@ -166,7 +166,7 @@ public class PDFConverter
             bmp.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
             ImageData imageData = ImageDataFactory.Create(memoryStream.ToArray());
 
-            decimal grand_total = totalAmount - discountedAmount;
+            decimal grand_total = totalAmount - discountAmount;
             print_window pw = new print_window(bmp, grand_total, cashierName);
             pw.ShowDialog();
         }

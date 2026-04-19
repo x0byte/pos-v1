@@ -12,14 +12,19 @@ namespace WindowsFormsApp1
     public static class FallbackBillLogger
     {
         private static readonly string CsvPath = Path.Combine(Application.StartupPath, "stc_fallback_bills.csv");
+        private static readonly string CsvTempPath = CsvPath + ".tmp";
+        private static readonly string CsvBackupPath = CsvPath + ".bak";
+        private const int MinColumns = 9;
 
-        public static void LogFailedBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountedAmount)
+        public static void LogFailedBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount, string clientSubmissionId)
         {
             try
             {
                 string billRef = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
-                decimal grandTotal = totalAmount - discountedAmount;
+                decimal grandTotal = totalAmount - discountAmount;
                 int itemCount = 0;
+                DateTime occurredAt = DateTime.Now;
+                string createdByUsername = string.IsNullOrWhiteSpace(UserSession.Username) ? "desktop-pos" : UserSession.Username;
                 List<string> lines = new List<string>();
 
                 foreach (DataGridViewRow row in dataGridView.Rows)
@@ -34,13 +39,14 @@ namespace WindowsFormsApp1
                 {
                     "BILL",
                     billRef,
-                    DateTime.Now.ToString("o"),
-                    salesperson ?? string.Empty,
+                    occurredAt.ToString("o"),
+                    salesperson ?? string.Empty, // salesperson is always employee emp_code, never emp_name.
                     totalAmount.ToString(CultureInfo.InvariantCulture),
-                    discountedAmount.ToString(CultureInfo.InvariantCulture),
+                    discountAmount.ToString(CultureInfo.InvariantCulture),
                     grandTotal.ToString(CultureInfo.InvariantCulture),
                     itemCount.ToString(CultureInfo.InvariantCulture),
-                    "0"
+                    "0",
+                    clientSubmissionId ?? string.Empty
                 }));
 
                 foreach (DataGridViewRow row in dataGridView.Rows)
@@ -50,16 +56,52 @@ namespace WindowsFormsApp1
                         continue;
                     }
 
+                    string itemName = row.Cells[1].Value?.ToString() ?? string.Empty;
+                    decimal amount = ParseDecimal(row.Cells[3].Value?.ToString());
+
                     lines.Add(ToCsvLine(new[]
                     {
                         "ITEM",
                         billRef,
-                        row.Cells[1].Value?.ToString() ?? string.Empty,
+                        itemName,
                         row.Cells[2].Value?.ToString() ?? "0",
                         row.Cells[3].Value?.ToString() ?? "0",
                         row.Cells[4].Value?.ToString() ?? "0",
                         string.Empty,
                         string.Empty,
+                        "0"
+                    }));
+
+                    InventoryItem inventoryItem = AppCache.Inventory.FirstOrDefault(inv =>
+                        string.Equals(inv.ItemName, itemName, StringComparison.Ordinal));
+
+                    if (inventoryItem == null)
+                    {
+                        lines.Add(ToCsvLine(new[]
+                        {
+                            "STOCK_MOVEMENT_SKIPPED",
+                            billRef,
+                            itemName,
+                            "No exact inventory.item_name match was found.",
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            "0"
+                        }));
+                        continue;
+                    }
+
+                    lines.Add(ToCsvLine(new[]
+                    {
+                        "MOVEMENT",
+                        billRef,
+                        itemName,
+                        (-amount).ToString(CultureInfo.InvariantCulture),
+                        "sale",
+                        occurredAt.ToString("o"),
+                        createdByUsername,
+                        "Desktop POS sale",
                         "0"
                     }));
                 }
@@ -69,6 +111,32 @@ namespace WindowsFormsApp1
             catch
             {
                 // Silent by design for cashier flow.
+            }
+        }
+
+        public static void LogStockMovementSkipped(string billReference, string itemName, string reason)
+        {
+            try
+            {
+                File.AppendAllLines(CsvPath, new[]
+                {
+                    ToCsvLine(new[]
+                    {
+                        "STOCK_MOVEMENT_SKIPPED",
+                        billReference ?? string.Empty,
+                        itemName ?? string.Empty,
+                        reason ?? string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        "1"
+                    })
+                });
+            }
+            catch
+            {
+                // Local warning only.
             }
         }
 
@@ -84,11 +152,6 @@ namespace WindowsFormsApp1
                 foreach (string line in File.ReadAllLines(CsvPath))
                 {
                     string[] row = ParseCsvLine(line);
-                    if (row.Length < 9)
-                    {
-                        continue;
-                    }
-
                     if (string.Equals(row[0], "BILL", StringComparison.OrdinalIgnoreCase) && row[8] != "1")
                     {
                         return true;
@@ -103,6 +166,25 @@ namespace WindowsFormsApp1
             return false;
         }
 
+        public static bool IsQueueLarge()
+        {
+            try
+            {
+                FileInfo info = new FileInfo(CsvPath);
+                if (!info.Exists)
+                {
+                    return false;
+                }
+
+                long lineCount = File.ReadLines(CsvPath).LongCount();
+                return info.Length > 10 * 1024 * 1024 || lineCount > 50000;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static int RetryUnsynced()
         {
             try
@@ -114,8 +196,19 @@ namespace WindowsFormsApp1
 
                 List<string[]> rows = File.ReadAllLines(CsvPath)
                     .Select(ParseCsvLine)
-                    .Where(r => r.Length >= 9)
                     .ToList();
+
+                foreach (string[] row in rows)
+                {
+                    string rowType = row[0] ?? string.Empty;
+                    if (!string.Equals(rowType, "BILL", StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(rowType, "ITEM", StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(rowType, "MOVEMENT", StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(rowType, "STOCK_MOVEMENT_SKIPPED", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.WriteLine("WARNING: Unknown fallback CSV row type skipped: " + rowType);
+                    }
+                }
 
                 int syncedCount = 0;
                 bool modified = false;
@@ -130,11 +223,15 @@ namespace WindowsFormsApp1
                     List<string[]> itemRows = rows
                         .Where(r => string.Equals(r[0], "ITEM", StringComparison.OrdinalIgnoreCase) && r[1] == billRef)
                         .ToList();
+                    List<string[]> movementRows = rows
+                        .Where(r => string.Equals(r[0], "MOVEMENT", StringComparison.OrdinalIgnoreCase) && r[1] == billRef)
+                        .ToList();
 
-                    if (TrySyncBill(billRow, itemRows))
+                    if (TrySyncBill(billRow, itemRows, movementRows))
                     {
                         foreach (string[] row in rows.Where(r => r[1] == billRef))
                         {
+                            EnsureLength(row, MinColumns);
                             row[8] = "1";
                         }
 
@@ -145,7 +242,7 @@ namespace WindowsFormsApp1
 
                 if (modified)
                 {
-                    File.WriteAllLines(CsvPath, rows.Select(ToCsvLine));
+                    AtomicRewrite(rows.Select(ToCsvLine).ToList());
                 }
 
                 return syncedCount;
@@ -156,7 +253,7 @@ namespace WindowsFormsApp1
             }
         }
 
-        private static bool TrySyncBill(string[] billRow, List<string[]> itemRows)
+        private static bool TrySyncBill(string[] billRow, List<string[]> itemRows, List<string[]> movementRows)
         {
             try
             {
@@ -166,24 +263,41 @@ namespace WindowsFormsApp1
                 decimal grandTotal = ParseDecimal(billRow[6]);
                 int itemCount = ParseInt(billRow[7]);
                 DateTime dateTime = ParseDateTime(billRow[2]);
+                string clientSubmissionId = billRow.Length > 9 ? billRow[9] : null;
 
                 using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
                 {
                     conn.Open();
+
+                    if (!string.IsNullOrWhiteSpace(clientSubmissionId))
+                    {
+                        string existingBillQuery = "SELECT bill_id FROM bill_history WHERE client_submission_id = @sid LIMIT 1";
+                        using (MySqlCommand existingCmd = new MySqlCommand(existingBillQuery, conn))
+                        {
+                            existingCmd.Parameters.AddWithValue("@sid", clientSubmissionId);
+                            object existing = existingCmd.ExecuteScalar();
+                            if (existing != null && existing != DBNull.Value)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
                     MySqlTransaction transaction = conn.BeginTransaction();
                     try
                     {
                         string insertHeader = @"INSERT INTO bill_history
-                        (bill_code, date_time, salesperson, total_amount, discount_amount, grand_total, item_count)
-                        VALUES ('', @date_time, @salesperson, @total_amount, @discount_amount, @grand_total, @item_count)";
+                        (bill_code, date_time, salesperson, total_amount, discount_amount, grand_total, item_count, client_submission_id)
+                        VALUES ('', @date_time, @salesperson, @total_amount, @discount_amount, @grand_total, @item_count, @client_submission_id)";
 
                         MySqlCommand cmd = new MySqlCommand(insertHeader, conn, transaction);
                         cmd.Parameters.AddWithValue("@date_time", dateTime);
-                        cmd.Parameters.AddWithValue("@salesperson", salesperson);
+                        cmd.Parameters.AddWithValue("@salesperson", salesperson); // salesperson is always employee emp_code, never emp_name.
                         cmd.Parameters.AddWithValue("@total_amount", totalAmount);
                         cmd.Parameters.AddWithValue("@discount_amount", discountAmount);
                         cmd.Parameters.AddWithValue("@grand_total", grandTotal);
                         cmd.Parameters.AddWithValue("@item_count", itemCount);
+                        cmd.Parameters.AddWithValue("@client_submission_id", string.IsNullOrWhiteSpace(clientSubmissionId) ? (object)DBNull.Value : clientSubmissionId);
                         cmd.ExecuteNonQuery();
 
                         long billId = cmd.LastInsertedId;
@@ -210,6 +324,43 @@ namespace WindowsFormsApp1
                             itemCmd.ExecuteNonQuery();
                         }
 
+                        foreach (string[] movementRow in movementRows)
+                        {
+                            InventoryItem cached = AppCache.Inventory.FirstOrDefault(inv =>
+                                string.Equals(inv.ItemName, movementRow[2], StringComparison.Ordinal));
+
+                            int? resolvedItemId = cached?.Id;
+                            if (resolvedItemId == null)
+                            {
+                                using (MySqlCommand lookupCmd = new MySqlCommand(
+                                    "SELECT id FROM inventory WHERE item_name = @name LIMIT 1", conn, transaction))
+                                {
+                                    lookupCmd.Parameters.AddWithValue("@name", movementRow[2] ?? string.Empty);
+                                    object lookupResult = lookupCmd.ExecuteScalar();
+                                    if (lookupResult != null && lookupResult != DBNull.Value)
+                                        resolvedItemId = Convert.ToInt32(lookupResult);
+                                }
+                            }
+
+                            if (resolvedItemId == null) continue;
+
+                            string insertMovement = @"INSERT INTO stock_movement
+                                (item_id, item_name, movement_type, qty_delta, reference_type, reference_id, occurred_at, created_at, created_by_user_id, created_by_username, note)
+                                VALUES
+                                (@item_id, @item_name, @movement_type, @qty_delta, 'bill_history', @reference_id, @occurred_at, NOW(), NULL, @created_by_username, @note)";
+
+                            MySqlCommand movementCmd = new MySqlCommand(insertMovement, conn, transaction);
+                            movementCmd.Parameters.AddWithValue("@item_id", resolvedItemId.Value);
+                            movementCmd.Parameters.AddWithValue("@item_name", movementRow[2] ?? string.Empty);
+                            movementCmd.Parameters.AddWithValue("@movement_type", movementRow[4] ?? "sale");
+                            movementCmd.Parameters.AddWithValue("@qty_delta", ParseDecimal(movementRow[3]));
+                            movementCmd.Parameters.AddWithValue("@reference_id", billId);
+                            movementCmd.Parameters.AddWithValue("@occurred_at", ParseDateTime(movementRow[5]));
+                            movementCmd.Parameters.AddWithValue("@created_by_username", movementRow[6] ?? "desktop-pos");
+                            movementCmd.Parameters.AddWithValue("@note", movementRow[7] ?? string.Empty);
+                            movementCmd.ExecuteNonQuery();
+                        }
+
                         transaction.Commit();
                         return true;
                     }
@@ -223,6 +374,20 @@ namespace WindowsFormsApp1
             catch
             {
                 return false;
+            }
+        }
+
+        private static void AtomicRewrite(List<string> lines)
+        {
+            File.WriteAllLines(CsvTempPath, lines);
+
+            if (File.Exists(CsvPath))
+            {
+                File.Replace(CsvTempPath, CsvPath, CsvBackupPath, true);
+            }
+            else
+            {
+                File.Move(CsvTempPath, CsvPath);
             }
         }
 
@@ -244,6 +409,7 @@ namespace WindowsFormsApp1
             {
                 return dt;
             }
+
             return DateTime.Now;
         }
 
@@ -256,6 +422,7 @@ namespace WindowsFormsApp1
                 {
                     sb.Append(",");
                 }
+
                 sb.Append(EscapeCsv(values[i] ?? string.Empty));
             }
             return sb.ToString();
@@ -263,15 +430,16 @@ namespace WindowsFormsApp1
 
         private static string EscapeCsv(string input)
         {
-            if (input.Contains("\""))
+            string value = input ?? string.Empty;
+            if (value.Contains("\""))
             {
-                input = input.Replace("\"", "\"\"");
+                value = value.Replace("\"", "\"\"");
             }
-            if (input.Contains(",") || input.Contains("\"") || input.Contains("\n") || input.Contains("\r"))
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r"))
             {
-                return "\"" + input + "\"";
+                return "\"" + value + "\"";
             }
-            return input;
+            return value;
         }
 
         private static string[] ParseCsvLine(string line)
@@ -307,12 +475,22 @@ namespace WindowsFormsApp1
             }
 
             values.Add(current.ToString());
-            while (values.Count < 9)
+            while (values.Count < MinColumns)
             {
                 values.Add(string.Empty);
             }
 
             return values.ToArray();
+        }
+
+        private static void EnsureLength(string[] row, int minLength)
+        {
+            if (row.Length >= minLength)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException("Row length was shorter than expected.");
         }
     }
 }

@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using MySql.Data.MySqlClient;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.IO;
 using iText.Kernel.Pdf;
 using iText.Layout;
@@ -18,6 +17,7 @@ using iText.Kernel.Geom;
 
 using System.Drawing.Printing;
 using System.Drawing.Imaging;
+using Newtonsoft.Json;
 
 
 namespace WindowsFormsApp1
@@ -26,9 +26,15 @@ namespace WindowsFormsApp1
     {
         private string connectionString = DatabaseConfig.ConnectionString;
         private readonly List<BillItem> billItems = new List<BillItem>();
-        private static List<BillItem> pausedBillItems = new List<BillItem>();
+        private static readonly Dictionary<string, PausedCartRecord> pausedBillItems = new Dictionary<string, PausedCartRecord>(StringComparer.OrdinalIgnoreCase);
+        private static bool pausedCartsLoaded;
+        private static readonly string PausedCartsPath = System.IO.Path.Combine(Application.StartupPath, "paused_carts.json");
         private int nextRowId = 1;
         private DateTime billCreatedAt = DateTime.Now;
+        private string currentClientSubmissionId;
+        private string pendingSalespersonHint;
+        private string pendingSnapshotSessionId;
+        private bool promptedForPausedCartRestore;
         private readonly ListBox suggestionListBox;
         private readonly System.Windows.Forms.TextBox textBox;
         private Label lblStockSync;
@@ -50,9 +56,9 @@ namespace WindowsFormsApp1
             UpdateStockSyncLabel();
             UpdateSyncStatusLabel();
             StartSyncRetryTimer();
-
+            EnsurePausedCartsLoaded();
             CheckForPausesInMemory();
-
+            UpdatePauseButtonState();
 
         }
         private void InitializeStockRefreshControls()
@@ -120,7 +126,12 @@ namespace WindowsFormsApp1
             var lbl = this.Controls.Find("lblSyncStatus", false).FirstOrDefault() as Label;
             if (lbl == null) return;
 
-            if (FallbackBillLogger.HasUnsyncedBills())
+            if (FallbackBillLogger.IsQueueLarge())
+            {
+                lbl.Text = "Offline queue is large - database may be unreachable. Contact admin.";
+                lbl.ForeColor = Color.Red;
+            }
+            else if (FallbackBillLogger.HasUnsyncedBills())
             {
                 lbl.Text = "Unsynced bills pending";
                 lbl.ForeColor = Color.OrangeRed;
@@ -249,11 +260,11 @@ namespace WindowsFormsApp1
         }
 
 
-        private string loadEmployeeCode()
+        private string loadEmployeeCode(string preferredEmployeeCode = null)
         {
             string selectedEmployee = null;
 
-            using (var empSelectionForm = new emp_selection())
+            using (var empSelectionForm = new emp_selection(preferredEmployeeCode))
             {
 
                 if (empSelectionForm.ShowDialog() == DialogResult.OK)
@@ -264,6 +275,12 @@ namespace WindowsFormsApp1
             }
 
             return selectedEmployee;
+        }
+
+        public void SetPendingBillContext(string salespersonHint, string snapshotSessionId)
+        {
+            pendingSalespersonHint = salespersonHint;
+            pendingSnapshotSessionId = snapshotSessionId;
         }
 
 
@@ -284,14 +301,13 @@ namespace WindowsFormsApp1
             DataTable dataTable = new DataTable();
             dataTable.Columns.Add("id", typeof(int));
             dataTable.Columns.Add("ítem_name", typeof(string));
-            // Keep float columns so PDFConverter cell parsing is unchanged
-            dataTable.Columns.Add("rate", typeof(float));
-            dataTable.Columns.Add("amount", typeof(float));
-            dataTable.Columns.Add("discounted_price", typeof(float));
+            dataTable.Columns.Add("rate", typeof(decimal));
+            dataTable.Columns.Add("amount", typeof(decimal));
+            dataTable.Columns.Add("discounted_price", typeof(decimal));
 
             foreach (BillItem item in billItems)
             {
-                dataTable.Rows.Add(item.RowId, item.ItemName, (float)item.Rate, (float)item.Amount, (float)item.DiscountedPrice);
+                dataTable.Rows.Add(item.RowId, item.ItemName, item.Rate, item.Amount, item.DiscountedPrice);
             }
 
             dataGridBilling.DataSource = dataTable;
@@ -315,6 +331,7 @@ namespace WindowsFormsApp1
         {
             decimal sum = billItems.Sum(item => item.DiscountedPrice);
             lblTotalPrice.Text = sum.ToString();
+            UpdatePauseButtonState();
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -356,64 +373,86 @@ namespace WindowsFormsApp1
 
         private void button2_Click(object sender, EventArgs e)
         {
-           
+            button2.Enabled = false;
             DialogResult dialogResult = MessageBox.Show("Are you sure you want to checkout this order?", "Confirmation", MessageBoxButtons.YesNo);
-            if (dialogResult == DialogResult.Yes)
+            try
             {
-                ReorderBillingTable();
-                LoadBillingData();
- 
-                string emp_code = loadEmployeeCode();
-
-                // Check if the user clicked OK and entered a name
-                if (!string.IsNullOrEmpty(emp_code))
+                if (dialogResult == DialogResult.Yes)
                 {
-                    // Proceed with printing the bill, including the salesperson's name
-                    
-
-
-                    string cashierName = emp_code;
-                    decimal totalAmount = CalculateGrandTotalFromMemory();
-                    decimal discountedAmount = totalAmount - decimal.Parse(lblTotalPrice.Text);
-
-                    // Save first so the bill code is available for the receipt
-                    string billCode;
-                    try
-                    {
-                        billCode = BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountedAmount);
-                    }
-                    catch
-                    {
-                        FallbackBillLogger.LogFailedBill(dataGridBilling, cashierName, totalAmount, discountedAmount);
-                        billCode = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
-                    }
-
-                    PDFConverter converter = new PDFConverter();
-                    converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountedAmount, billCode, billCreatedAt);
-
-                    billItems.Clear();
-                    nextRowId = 1;
-                    billCreatedAt = DateTime.Now;
+                    ReorderBillingTable();
                     LoadBillingData();
-                    GetRowCount();
-                    calculate_Total();
-                    clearTexts();
-                    UpdateSyncStatusLabel();
+                    EnsureCurrentSubmissionId();
+ 
+                    string emp_code = loadEmployeeCode(pendingSalespersonHint);
 
-                }
-                else
-                {
-                    MessageBox.Show("Please enter the salesperson's name to proceed.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+                    // Check if the user clicked OK and entered a name
+                    if (!string.IsNullOrEmpty(emp_code))
+                    {
+                        string cashierName = emp_code;
+                        decimal totalAmount = CalculateGrandTotalFromMemory();
+                        decimal discountAmount = totalAmount - decimal.Parse(lblTotalPrice.Text);
 
+                        // Save first so the bill code is available for the receipt
+                        string billCode;
+                        try
+                        {
+                            billCode = BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountAmount, currentClientSubmissionId);
+                        }
+                        catch (Exception ex)
+                        {
+                            DialogResult fallbackChoice = MessageBox.Show(
+                                "Bill save failed.\n\n"
+                                + ex.Message
+                                + "\n\nQueue this bill offline and print with a LOCAL code instead?",
+                                "Database Save Failed",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Error);
+
+                            if (fallbackChoice != DialogResult.Yes)
+                            {
+                                throw;
+                            }
+
+                            FallbackBillLogger.LogFailedBill(dataGridBilling, cashierName, totalAmount, discountAmount, currentClientSubmissionId);
+                            billCode = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+                        }
+
+                        PDFConverter converter = new PDFConverter();
+                        converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountAmount, billCode, billCreatedAt);
+
+                        if (!string.IsNullOrWhiteSpace(pendingSnapshotSessionId))
+                        {
+                            DesktopPosLocalAudit.WritePendingDiff(pendingSnapshotSessionId, billItems.Select(item => new PendingBillSnapshotLine
+                            {
+                                ItemName = item.ItemName,
+                                Rate = item.Rate,
+                                Amount = item.Amount,
+                                DiscountedPrice = item.DiscountedPrice
+                            }));
+                        }
+
+                        billItems.Clear();
+                        nextRowId = 1;
+                        billCreatedAt = DateTime.Now;
+                        currentClientSubmissionId = null;
+                        pendingSalespersonHint = null;
+                        pendingSnapshotSessionId = null;
+                        LoadBillingData();
+                        GetRowCount();
+                        calculate_Total();
+                        clearTexts();
+                        UpdateSyncStatusLabel();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Please enter the salesperson's name to proceed.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
             }
-            else if (dialogResult == DialogResult.No)
+            finally
             {
-
+                button2.Enabled = true;
             }
-
-
-
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -424,10 +463,14 @@ namespace WindowsFormsApp1
                 billItems.Clear();
                 nextRowId = 1;
                 billCreatedAt = DateTime.Now;
+                currentClientSubmissionId = null;
+                pendingSalespersonHint = null;
+                pendingSnapshotSessionId = null;
                 LoadBillingData();
                 clearTexts();
                 lblCount.Text = string.Empty;
                 lblTotalPrice.Text = string.Empty;
+                UpdatePauseButtonState();
             }
             else if (dialogResult == DialogResult.No)
             {
@@ -555,10 +598,14 @@ namespace WindowsFormsApp1
             billItems.Clear();
             nextRowId = 1;
             billCreatedAt = DateTime.Now;
+            currentClientSubmissionId = null;
+            pendingSalespersonHint = null;
+            pendingSnapshotSessionId = null;
             LoadBillingData();
             clearTexts();
             lblCount.Text = string.Empty;
             lblTotalPrice.Text = string.Empty;
+            UpdatePauseButtonState();
         }
 
         public void RefreshBillingView()
@@ -568,6 +615,7 @@ namespace WindowsFormsApp1
 
         public void AddBillItem(string itemName, decimal rate, decimal amount, decimal discountedPrice)
         {
+            EnsureCurrentSubmissionId();
             billItems.Add(new BillItem
             {
                 RowId = nextRowId++,
@@ -583,50 +631,237 @@ namespace WindowsFormsApp1
 
         private void BtnPauseBillInMemory_Click(object sender, EventArgs e)
         {
-            DialogResult dialogResult = MessageBox.Show("Are you sure you want to make that change?  ", "Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            if (dialogResult != DialogResult.Yes)
+            if (billItems.Count > 0)
             {
-                return;
-            }
+                if (pausedBillItems.Count >= 5)
+                {
+                    MessageBox.Show("Please resume or cancel an existing paused bill first.", "Paused Bills", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
 
-            if (btnPauseBill.Text == "Pause this Bill")
-            {
-                pausedBillItems = billItems.Select(CloneBillItem).ToList();
+                string label = PromptForPauseLabel();
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    return;
+                }
+
+                pausedBillItems[label] = new PausedCartRecord
+                {
+                    Label = label,
+                    PausedAt = DateTime.Now,
+                    Items = billItems.Select(item => new BillLineRecord
+                    {
+                        ItemName = item.ItemName,
+                        Rate = item.Rate,
+                        Amount = item.Amount,
+                        DiscountedPrice = item.DiscountedPrice
+                    }).ToList()
+                };
+                SavePausedCarts();
+
                 billItems.Clear();
                 nextRowId = 1;
+                billCreatedAt = DateTime.Now;
+                currentClientSubmissionId = null;
                 LoadBillingData();
-                btnPauseBill.Text = "Go to the Previous Bill";
-                btnPauseBill.BackColor = Color.Black;
-                btnPauseBill.ForeColor = SystemColors.Control;
+                clearTexts();
+                UpdatePauseButtonState();
                 return;
             }
 
-            billItems.Clear();
-            billItems.AddRange(pausedBillItems.Select(CloneBillItem));
-            pausedBillItems.Clear();
-            ReorderBillingTable();
-            LoadBillingData();
-            btnPauseBill.Text = "Pause this Bill";
-            btnPauseBill.BackColor = Color.FromArgb(255, 255, 128, 0);
-            btnPauseBill.ForeColor = SystemColors.ControlText;
+            if (pausedBillItems.Count > 0)
+                ResumePausedCart();
         }
 
         private void CheckForPausesInMemory()
         {
-            if (pausedBillItems.Count == 0)
+            if (promptedForPausedCartRestore || pausedBillItems.Count == 0)
             {
                 return;
             }
 
-            DialogResult result = MessageBox.Show("There is another bill paused in the system. Do you want to access it ?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            promptedForPausedCartRestore = true;
+
+            DialogResult result = MessageBox.Show("There are paused bills saved in the system. Do you want to resume one now?", "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
             if (result == DialogResult.Yes)
             {
-                billItems.Clear();
-                billItems.AddRange(pausedBillItems.Select(CloneBillItem));
+                ResumePausedCart();
+            }
+        }
+
+        private void EnsurePausedCartsLoaded()
+        {
+            if (pausedCartsLoaded)
+            {
+                return;
+            }
+
+            pausedCartsLoaded = true;
+            if (!File.Exists(PausedCartsPath))
+            {
+                return;
+            }
+
+            try
+            {
+                List<PausedCartRecord> carts = JsonConvert.DeserializeObject<List<PausedCartRecord>>(File.ReadAllText(PausedCartsPath));
                 pausedBillItems.Clear();
-                ReorderBillingTable();
-                LoadBillingData();
+                foreach (PausedCartRecord cart in carts ?? new List<PausedCartRecord>())
+                {
+                    if (!string.IsNullOrWhiteSpace(cart.Label))
+                    {
+                        pausedBillItems[cart.Label] = cart;
+                    }
+                }
+            }
+            catch
+            {
+                pausedBillItems.Clear();
+            }
+        }
+
+        private void SavePausedCarts()
+        {
+            try
+            {
+                string json = JsonConvert.SerializeObject(pausedBillItems.Values.OrderBy(x => x.PausedAt).ToList(), Formatting.Indented);
+                File.WriteAllText(PausedCartsPath, json);
+            }
+            catch
+            {
+                // Local convenience only. Do not block cashier flow.
+            }
+        }
+
+        private string PromptForPauseLabel()
+        {
+            Form prompt = new Form
+            {
+                Width = 420,
+                Height = 190,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = "Pause Bill",
+                StartPosition = FormStartPosition.CenterParent
+            };
+
+            Label textLabel = new Label { Left = 20, Top = 20, Width = 350, Text = "Enter a short label for this paused bill:" };
+            System.Windows.Forms.TextBox inputBox = new System.Windows.Forms.TextBox { Left = 20, Top = 50, Width = 350 };
+            System.Windows.Forms.Button confirmation = new System.Windows.Forms.Button { Text = "Save", Left = 145, Width = 120, Top = 90, DialogResult = DialogResult.OK };
+
+            prompt.Controls.Add(textLabel);
+            prompt.Controls.Add(inputBox);
+            prompt.Controls.Add(confirmation);
+            prompt.AcceptButton = confirmation;
+
+            return prompt.ShowDialog() == DialogResult.OK ? inputBox.Text.Trim() : null;
+        }
+
+        private void ResumePausedCart()
+        {
+            if (pausedBillItems.Count == 0)
+            {
+                MessageBox.Show("There are no paused bills to resume.", "Paused Bills", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string selectedLabel = ShowPausedCartPicker();
+            if (string.IsNullOrWhiteSpace(selectedLabel) || !pausedBillItems.ContainsKey(selectedLabel))
+            {
+                return;
+            }
+
+            PausedCartRecord cart = pausedBillItems[selectedLabel];
+            billItems.Clear();
+            nextRowId = 1;
+            currentClientSubmissionId = null;
+            EnsureCurrentSubmissionId();
+
+            foreach (BillLineRecord item in cart.Items)
+            {
+                billItems.Add(new BillItem
+                {
+                    RowId = nextRowId++,
+                    ItemName = item.ItemName,
+                    Rate = item.Rate,
+                    Amount = item.Amount,
+                    DiscountedPrice = item.DiscountedPrice
+                });
+            }
+
+            pausedBillItems.Remove(selectedLabel);
+            SavePausedCarts();
+            ReorderBillingTable();
+            LoadBillingData();
+            GetRowCount();
+            calculate_Total();
+            UpdatePauseButtonState();
+        }
+
+        private string ShowPausedCartPicker()
+        {
+            string selected = null;
+            Form picker = new Form
+            {
+                Width = 520,
+                Height = 420,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                Text = "Resume Paused Bill",
+                StartPosition = FormStartPosition.CenterParent
+            };
+
+            ListBox listBox = new ListBox
+            {
+                Left = 20,
+                Top = 20,
+                Width = 460,
+                Height = 280,
+                Font = new Font("Microsoft Sans Serif", 12F)
+            };
+
+            foreach (PausedCartRecord cart in pausedBillItems.Values.OrderBy(x => x.PausedAt))
+            {
+                listBox.Items.Add(cart.Label + "  |  " + cart.Items.Count + " items  |  " + cart.PausedAt.ToString("yyyy-MM-dd HH:mm"));
+            }
+
+            System.Windows.Forms.Button resumeButton = new System.Windows.Forms.Button { Text = "Resume", Left = 180, Width = 140, Top = 320, DialogResult = DialogResult.OK };
+            picker.Controls.Add(listBox);
+            picker.Controls.Add(resumeButton);
+            picker.AcceptButton = resumeButton;
+
+            if (picker.ShowDialog() == DialogResult.OK && listBox.SelectedIndex >= 0)
+            {
+                selected = pausedBillItems.Values.OrderBy(x => x.PausedAt).ElementAt(listBox.SelectedIndex).Label;
+            }
+
+            return selected;
+        }
+
+        private void UpdatePauseButtonState()
+        {
+            if (btnPauseBill == null)
+            {
+                return;
+            }
+
+            if (billItems.Count > 0)
+            {
+                btnPauseBill.Text = "Pause this Bill";
+                btnPauseBill.BackColor = Color.FromArgb(255, 255, 128, 0);
+                btnPauseBill.ForeColor = SystemColors.ControlText;
+            }
+            else
+            {
+                btnPauseBill.Text = pausedBillItems.Count > 0 ? "Resume Paused Bill" : "Pause this Bill";
+                btnPauseBill.BackColor = pausedBillItems.Count > 0 ? Color.Black : Color.FromArgb(255, 255, 128, 0);
+                btnPauseBill.ForeColor = pausedBillItems.Count > 0 ? SystemColors.Control : SystemColors.ControlText;
+            }
+        }
+
+        private void EnsureCurrentSubmissionId()
+        {
+            if (string.IsNullOrWhiteSpace(currentClientSubmissionId))
+            {
+                currentClientSubmissionId = Guid.NewGuid().ToString();
             }
         }
 
@@ -644,7 +879,7 @@ namespace WindowsFormsApp1
 
         //////////////////////////////////////////////////////////////////////////PRINTING/////////////////////////////////////////////////////////////////////////
 
-        public void PrintReceipt(DataGridView dataGridView, string cashierName, decimal totalAmount, decimal discountedAmount)
+        public void PrintReceipt(DataGridView dataGridView, string cashierName, decimal totalAmount, decimal discountAmount, DateTime billCreatedAt)
         {
             PrintDocument printDocument = new PrintDocument();
             printDocument.DefaultPageSettings.PaperSize = new System.Drawing.Printing.PaperSize("pprnm", 285, 5000);
@@ -690,8 +925,8 @@ namespace WindowsFormsApp1
                 offsetY += detailsFont.Height + 10;
 
                 // Print Date and Time
-                string date = DateTime.Now.ToShortDateString();
-                string time = DateTime.Now.ToShortTimeString();
+                string date = billCreatedAt.ToShortDateString();
+                string time = billCreatedAt.ToShortTimeString();
                 graphics.DrawString($"Date: {date} Time: {time}", font, Brushes.Black, startX, startY + offsetY);
                 offsetY += (int)fontHeight + 5;
 
@@ -774,9 +1009,9 @@ namespace WindowsFormsApp1
                 offsetY += 20;
                 graphics.DrawString($"Total Rs.: {totalAmount:N2}", font, Brushes.Black, startX, startY + offsetY);
                 offsetY += (int)fontHeight + 5;
-                graphics.DrawString($"Discount Rs. : {discountedAmount:N2}", discountFont, Brushes.Black, startX, startY + offsetY);
+                graphics.DrawString($"Discount Rs. : {discountAmount:N2}", discountFont, Brushes.Black, startX, startY + offsetY);
                 offsetY += (int)fontHeight + 5;
-                graphics.DrawString($"Grand Total Rs. : {(totalAmount - discountedAmount):N2}", grandTotalFont, Brushes.Black, startX, startY + offsetY);
+                graphics.DrawString($"Grand Total Rs. : {(totalAmount - discountAmount):N2}", grandTotalFont, Brushes.Black, startX, startY + offsetY);
 
                 // Add Footnotes
                 offsetY += 40; // Add some space before the footnotes
@@ -864,9 +1099,15 @@ namespace WindowsFormsApp1
         private bool isTheSaleProfitable()
         {
             lblCost.Text = string.IsNullOrEmpty(lblCost.Text) ? "0" : lblCost.Text;
+            txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
+            txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
 
-            decimal minimum_price = decimal.Parse(lblCost.Text) * decimal.Parse(txtAmount.Text);
-            decimal billed_price = decimal.Parse(lblFinalPrice.Text);
+            decimal retailPrice = decimal.Parse(txtRetailPrice.Text);
+            decimal qty = decimal.Parse(txtAmount.Text);
+            decimal eachDiscount = decimal.Parse(txtDisEach.Text);
+            decimal wholeDiscount = decimal.Parse(txtDisWhole.Text);
+            decimal minimum_price = decimal.Parse(lblCost.Text) * qty;
+            decimal billed_price = (retailPrice - eachDiscount) * qty - wholeDiscount;
 
             if (minimum_price > 0 && billed_price < minimum_price)
             {
@@ -884,6 +1125,14 @@ namespace WindowsFormsApp1
                 string password = PromptForPassword();
                 if (password == configuredPassword)
                 {
+                    DesktopPosLocalAudit.AppendOverrideLog(
+                        UserSession.Username ?? "desktop-pos",
+                        txtItemName.Text,
+                        qty,
+                        retailPrice,
+                        decimal.Parse(lblCost.Text),
+                        billed_price,
+                        "Below-cost sale override approved locally.");
                     return true;
                 }
                 else

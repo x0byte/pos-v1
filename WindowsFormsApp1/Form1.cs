@@ -47,6 +47,7 @@ namespace WindowsFormsApp1
             if (validateLogin(txtName.Text, txtPass.Text, out isAdmin))
             {
                 UserSession.IsAdmin = isAdmin;
+                UserSession.Username = txtName.Text?.Trim();
                 Home home = new Home(isAdmin);
                 home.Show();
                 this.Hide();

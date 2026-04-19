@@ -12,12 +12,18 @@ namespace WindowsFormsApp1
 {
     public partial class emp_selection : Form
     {
+        private readonly string preferredEmployeeCode;
         public string SelectedEmployee { get; private set; }
 
 
-        public emp_selection()
+        public emp_selection() : this(null)
+        {
+        }
+
+        public emp_selection(string preferredEmployeeCode)
         {
             InitializeComponent();
+            this.preferredEmployeeCode = preferredEmployeeCode;
 
             LoadComboBoxData();
             cmbEmployee.Focus();
@@ -38,6 +44,25 @@ namespace WindowsFormsApp1
                     cmbEmployee.Items.Add(employee.EmpCode);
                 }
             }
+
+            if (!string.IsNullOrWhiteSpace(preferredEmployeeCode))
+            {
+                int preferredIndex = cmbEmployee.Items.IndexOf(preferredEmployeeCode);
+                if (preferredIndex >= 0)
+                {
+                    cmbEmployee.SelectedIndex = preferredIndex;
+                }
+            }
+
+            if (cmbEmployee.Items.Count == 0)
+            {
+                btnConfirm.Enabled = false;
+                MessageBox.Show("No active employees found. Contact admin.", "Employee List Empty", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else if (cmbEmployee.SelectedIndex < 0)
+            {
+                cmbEmployee.SelectedIndex = 0;
+            }
         }
 
         private void btnConfirm_Click(object sender, EventArgs e)
@@ -56,7 +81,8 @@ namespace WindowsFormsApp1
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("Please enter the salesmen's name", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            DialogResult = DialogResult.Cancel;
+            Close();
         }
 
         private void cmbEmployee_SelectedIndexChanged(object sender, EventArgs e)

@@ -16,9 +16,11 @@ namespace WindowsFormsApp1
         private Button btnTestConnection;
         private Button btnSave;
         private Button btnBack;
+        private readonly bool _fromLogin;
 
-        public AppSettings()
+        public AppSettings(bool fromLogin = false)
         {
+            _fromLogin = fromLogin;
             InitializeSettingsUi();
             LoadCurrentValues();
         }
@@ -138,8 +140,16 @@ namespace WindowsFormsApp1
 
         private void BtnBack_Click(object sender, EventArgs e)
         {
-            Home home = new Home(UserSession.IsAdmin);
-            home.Show();
+            if (_fromLogin)
+            {
+                Form1 login = new Form1();
+                login.Show();
+            }
+            else
+            {
+                Home home = new Home(UserSession.IsAdmin);
+                home.Show();
+            }
             this.Hide();
         }
 

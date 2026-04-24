@@ -400,6 +400,7 @@ namespace WindowsFormsApp1
                         }
                         string paymentMethod = paymentDlg.SelectedPaymentMethod;
                         int creditAccountId = paymentDlg.SelectedCreditAccountId;
+                        string creditAccountName = paymentDlg.SelectedCreditAccountName;
                         paymentDlg.Dispose();
 
                         string cashierName = emp_code;
@@ -432,14 +433,37 @@ namespace WindowsFormsApp1
                         PDFConverter converter = new PDFConverter();
                         converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountAmount, billCode, billCreatedAt);
 
-                        if (paymentMethod == "CREDIT" && creditAccountId > 0 && !billCode.StartsWith("LOCAL-"))
+                        if (paymentMethod == "CREDIT" && creditAccountId > 0)
                         {
-                            try
+                            if (billCode.StartsWith("LOCAL-"))
                             {
-                                CreditManager.AddTransaction(creditAccountId, "BILL", grandTotal, "DEBIT",
-                                    "POS sale", billCode, DateTime.Today);
+                                MessageBox.Show(
+                                    "This credit bill was queued offline with a LOCAL bill code.\n\n"
+                                    + "The bill can be synced later by the fallback mechanism, but the credit ledger was not updated automatically.\n\n"
+                                    + $"Write this down for manual credit entry:\nBill: {billCode}\nAccount: {creditAccountName}\nAmount: Rs. {grandTotal:N2}",
+                                    "Manual Credit Entry Required",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Warning);
                             }
-                            catch { }
+                            else
+                            {
+                                try
+                                {
+                                    CreditManager.AddTransaction(creditAccountId, "BILL", grandTotal, "DEBIT",
+                                        "POS sale", billCode, DateTime.Today);
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show(
+                                        "The bill was saved, but the credit ledger could not be updated.\n\n"
+                                        + "Write this down and add the credit entry manually later:\n"
+                                        + $"Bill: {billCode}\nAccount: {creditAccountName}\nAmount: Rs. {grandTotal:N2}\n\n"
+                                        + "Error: " + ex.Message,
+                                        "Manual Credit Entry Required",
+                                        MessageBoxButtons.OK,
+                                        MessageBoxIcon.Warning);
+                                }
+                            }
                         }
 
                         if (!string.IsNullOrWhiteSpace(pendingSnapshotSessionId))

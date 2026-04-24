@@ -102,6 +102,43 @@ namespace WindowsFormsApp1
 
         }
 
+        private void BtnDbSettings_Click(object sender, EventArgs e)
+        {
+            string overridePassword = DatabaseConfig.OverridePassword;
+            if (!string.IsNullOrWhiteSpace(overridePassword))
+            {
+                using (Form prompt = new Form())
+                {
+                    prompt.Text = "DB Settings";
+                    prompt.StartPosition = FormStartPosition.CenterScreen;
+                    prompt.FormBorderStyle = FormBorderStyle.FixedDialog;
+                    prompt.ClientSize = new System.Drawing.Size(320, 130);
+                    prompt.MaximizeBox = false;
+                    prompt.MinimizeBox = false;
+
+                    Label lbl = new Label { Text = "Enter override password:", AutoSize = true, Location = new System.Drawing.Point(20, 20) };
+                    TextBox txt = new TextBox { UseSystemPasswordChar = true, Location = new System.Drawing.Point(20, 45), Width = 280 };
+                    Button ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new System.Drawing.Point(130, 85), Width = 80 };
+                    Button cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new System.Drawing.Point(220, 85), Width = 80 };
+
+                    prompt.Controls.AddRange(new Control[] { lbl, txt, ok, cancel });
+                    prompt.AcceptButton = ok;
+                    prompt.CancelButton = cancel;
+
+                    if (prompt.ShowDialog() != DialogResult.OK || txt.Text != overridePassword)
+                    {
+                        if (prompt.DialogResult == DialogResult.OK)
+                            MessageBox.Show("Incorrect password.", "Access Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+            }
+
+            AppSettings settings = new AppSettings(fromLogin: true);
+            settings.Show();
+            this.Hide();
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
 

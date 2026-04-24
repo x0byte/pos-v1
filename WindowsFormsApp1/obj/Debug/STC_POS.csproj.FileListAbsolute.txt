@@ -163,8 +163,6 @@ C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsA
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\ko\Microsoft.ReportViewer.Common.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\pt\Microsoft.ReportViewer.Common.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\ru\Microsoft.ReportViewer.Common.resources.dll
-C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHS\Microsoft.ReportViewer.Common.resources.dll
-C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHT\Microsoft.ReportViewer.Common.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\de\Microsoft.ReportViewer.DataVisualization.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\es\Microsoft.ReportViewer.DataVisualization.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\fr\Microsoft.ReportViewer.DataVisualization.resources.dll
@@ -173,8 +171,6 @@ C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsA
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\ko\Microsoft.ReportViewer.DataVisualization.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\pt\Microsoft.ReportViewer.DataVisualization.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\ru\Microsoft.ReportViewer.DataVisualization.resources.dll
-C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHS\Microsoft.ReportViewer.DataVisualization.resources.dll
-C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHT\Microsoft.ReportViewer.DataVisualization.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\de\Microsoft.ReportViewer.Design.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\es\Microsoft.ReportViewer.Design.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\fr\Microsoft.ReportViewer.Design.resources.dll
@@ -183,8 +179,6 @@ C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsA
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\ko\Microsoft.ReportViewer.Design.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\pt\Microsoft.ReportViewer.Design.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\ru\Microsoft.ReportViewer.Design.resources.dll
-C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHS\Microsoft.ReportViewer.Design.resources.dll
-C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHT\Microsoft.ReportViewer.Design.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\de\Microsoft.ReportViewer.WinForms.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\es\Microsoft.ReportViewer.WinForms.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\fr\Microsoft.ReportViewer.WinForms.resources.dll
@@ -193,8 +187,6 @@ C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsA
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\ko\Microsoft.ReportViewer.WinForms.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\pt\Microsoft.ReportViewer.WinForms.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\ru\Microsoft.ReportViewer.WinForms.resources.dll
-C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHS\Microsoft.ReportViewer.WinForms.resources.dll
-C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHT\Microsoft.ReportViewer.WinForms.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\obj\Debug\STC_POS.csproj.AssemblyReference.cache
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.billing.resources
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.emp_selection.resources
@@ -259,3 +251,11 @@ C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsA
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.AppSettings.resources
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.PendingBillsInbox.resources
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.BillHistory.resources
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHS\Microsoft.ReportViewer.Common.resources.dll
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHT\Microsoft.ReportViewer.Common.resources.dll
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHS\Microsoft.ReportViewer.DataVisualization.resources.dll
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHT\Microsoft.ReportViewer.DataVisualization.resources.dll
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHS\Microsoft.ReportViewer.Design.resources.dll
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHT\Microsoft.ReportViewer.Design.resources.dll
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHS\Microsoft.ReportViewer.WinForms.resources.dll
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\zh-CHT\Microsoft.ReportViewer.WinForms.resources.dll

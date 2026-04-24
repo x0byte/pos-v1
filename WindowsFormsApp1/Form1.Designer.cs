@@ -32,6 +32,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.btnLogin = new System.Windows.Forms.Button();
+            this.btnDbSettings = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
             this.txtName = new System.Windows.Forms.TextBox();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
@@ -71,7 +72,7 @@
             this.label2.Click += new System.EventHandler(this.label1_Click);
             // 
             // btnLogin
-            // 
+            //
             this.btnLogin.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnLogin.Location = new System.Drawing.Point(289, 422);
             this.btnLogin.Name = "btnLogin";
@@ -80,6 +81,17 @@
             this.btnLogin.Text = "Login";
             this.btnLogin.UseVisualStyleBackColor = true;
             this.btnLogin.Click += new System.EventHandler(this.button1_Click);
+            //
+            // btnDbSettings
+            //
+            this.btnDbSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDbSettings.Location = new System.Drawing.Point(612, 570);
+            this.btnDbSettings.Name = "btnDbSettings";
+            this.btnDbSettings.Size = new System.Drawing.Size(130, 30);
+            this.btnDbSettings.TabIndex = 3;
+            this.btnDbSettings.Text = "DB Settings";
+            this.btnDbSettings.UseVisualStyleBackColor = true;
+            this.btnDbSettings.Click += new System.EventHandler(this.BtnDbSettings_Click);
             // 
             // label3
             // 
@@ -118,6 +130,7 @@
             this.Controls.Add(this.label3);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.btnLogin);
+            this.Controls.Add(this.btnDbSettings);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.txtPass);
@@ -138,6 +151,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button btnLogin;
+        private System.Windows.Forms.Button btnDbSettings;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox txtName;

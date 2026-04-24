@@ -388,7 +388,11 @@ namespace WindowsFormsApp1
                     // Check if the user clicked OK and entered a name
                     if (!string.IsNullOrEmpty(emp_code))
                     {
-                        PaymentMethodDialog paymentDlg = new PaymentMethodDialog();
+                        decimal totalAmount = CalculateGrandTotalFromMemory();
+                        decimal discountAmount = totalAmount - decimal.Parse(lblTotalPrice.Text);
+                        decimal grandTotal = totalAmount - discountAmount;
+
+                        PaymentMethodDialog paymentDlg = new PaymentMethodDialog(grandTotal);
                         if (paymentDlg.ShowDialog() != DialogResult.OK)
                         {
                             paymentDlg.Dispose();
@@ -399,9 +403,6 @@ namespace WindowsFormsApp1
                         paymentDlg.Dispose();
 
                         string cashierName = emp_code;
-                        decimal totalAmount = CalculateGrandTotalFromMemory();
-                        decimal discountAmount = totalAmount - decimal.Parse(lblTotalPrice.Text);
-                        decimal grandTotal = totalAmount - discountAmount;
 
                         // Save first so the bill code is available for the receipt
                         string billCode;

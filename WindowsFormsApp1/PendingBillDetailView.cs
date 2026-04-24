@@ -303,6 +303,17 @@ namespace WindowsFormsApp1
                 return;
             }
 
+            decimal grandTotalPreview = items.Sum(i => i.Price);
+            PaymentMethodDialog paymentDlg = new PaymentMethodDialog(grandTotalPreview);
+            if (paymentDlg.ShowDialog() != DialogResult.OK)
+            {
+                paymentDlg.Dispose();
+                return;
+            }
+            string paymentMethod  = paymentDlg.SelectedPaymentMethod;
+            int creditAccountId   = paymentDlg.SelectedCreditAccountId;
+            paymentDlg.Dispose();
+
             if (_printSubmissionId == null)
                 _printSubmissionId = Guid.NewGuid().ToString();
 
@@ -319,12 +330,13 @@ namespace WindowsFormsApp1
                 DataGridView printGrid = BuildTemporaryGrid();
                 decimal totalAmount    = items.Sum(i => i.Rate * i.Qty);
                 decimal discountAmount = totalAmount - items.Sum(i => i.Price);
+                decimal grandTotal     = totalAmount - discountAmount;
 
                 string billCode;
                 try
                 {
                     DataTable dt = BuildItemsDataTable();
-                    billCode = BillHistoryManager.SaveBillFromDataTable(code, totalAmount, discountAmount, dt, _printSubmissionId);
+                    billCode = BillHistoryManager.SaveBillFromDataTable(code, totalAmount, discountAmount, dt, _printSubmissionId, paymentMethod);
                 }
                 catch (Exception ex)
                 {
@@ -343,6 +355,16 @@ namespace WindowsFormsApp1
 
                     FallbackBillLogger.LogFailedBill(printGrid, code, totalAmount, discountAmount, null);
                     billCode = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+                }
+
+                if (paymentMethod == "CREDIT" && creditAccountId > 0 && !billCode.StartsWith("LOCAL-"))
+                {
+                    try
+                    {
+                        CreditManager.AddTransaction(creditAccountId, "BILL", grandTotal, "DEBIT",
+                            "POS sale (pending bill)", billCode, DateTime.Today);
+                    }
+                    catch { }
                 }
 
                 new PDFConverter().ConvertPrintDocumentToPdf(printGrid, code, totalAmount, discountAmount, billCode, createdAt);

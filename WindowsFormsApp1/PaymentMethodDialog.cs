@@ -1,179 +1,340 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace WindowsFormsApp1
 {
     public class PaymentMethodDialog : Form
     {
-        public string SelectedPaymentMethod { get; private set; } = "CASH";
-        public int SelectedCreditAccountId { get; private set; } = 0;
+        // ── Public result ─────────────────────────────────────────────────────────
+        public string SelectedPaymentMethod  { get; private set; } = "CASH";
+        public int    SelectedCreditAccountId   { get; private set; } = 0;
         public string SelectedCreditAccountName { get; private set; } = "";
 
-        private RadioButton rbCash;
-        private RadioButton rbCard;
-        private RadioButton rbCredit;
-        private ComboBox cmbCreditAccount;
-        private Label lblCreditAccount;
-        private Button btnConfirm;
-        private Button btnCancel;
+        // ── Internal state ────────────────────────────────────────────────────────
+        private string currentMethod = "CASH";
+        private List<AccountEntry> allAccounts    = new List<AccountEntry>();
+        private List<AccountEntry> filteredAccounts = new List<AccountEntry>();
 
-        private List<(int AccountId, string DisplayName)> creditAccounts;
+        // ── Controls ──────────────────────────────────────────────────────────────
+        private Button btnCash, btnCard, btnCredit, btnConfirm, btnCancel;
+        private Panel  creditPanel;
+        private TextBox txtSearch;
+        private ListBox lstAccounts;
+        private Label   lblNoAccounts;
 
-        public PaymentMethodDialog()
+        // ── Layout constants ──────────────────────────────────────────────────────
+        private const int FormWidth       = 580;
+        private const int CompactHeight   = 220;
+        private const int ExpandedHeight  = 460;
+        private const int MethodBtnTop    = 68;
+        private const int CreditPanelTop  = 150;
+        private const int CreditPanelH    = 225;
+
+        public PaymentMethodDialog(decimal grandTotal = 0)
         {
-            BuildUi();
-            LoadCreditAccounts();
+            BuildUi(grandTotal);
+            LoadAccounts();
+            SelectMethod("CASH");
         }
 
-        private void BuildUi()
+        // ── UI construction ───────────────────────────────────────────────────────
+        private void BuildUi(decimal grandTotal)
         {
-            Text = "Payment Method";
-            StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
-            ClientSize = new Size(440, 230);
+            Text              = "Payment Method";
+            StartPosition     = FormStartPosition.CenterParent;
+            FormBorderStyle   = FormBorderStyle.FixedDialog;
+            MaximizeBox       = false;
+            MinimizeBox       = false;
+            ClientSize        = new Size(FormWidth, CompactHeight);
+            Font              = new Font("Microsoft Sans Serif", 10F);
 
+            // ── Header ────────────────────────────────────────────────────────────
             Controls.Add(new Label
             {
-                Text = "How is this bill being paid?",
-                Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Bold),
+                Text     = "How is this bill being paid?",
+                Font     = new Font("Microsoft Sans Serif", 12F, FontStyle.Bold),
                 AutoSize = true,
-                Location = new Point(20, 20)
+                Location = new Point(20, 22)
             });
 
-            rbCash = new RadioButton
+            if (grandTotal > 0)
             {
-                Text = "Cash",
-                Font = new Font("Microsoft Sans Serif", 13F),
-                Location = new Point(40, 65),
+                Controls.Add(new Label
+                {
+                    Text      = $"Rs. {grandTotal:N2}",
+                    Font      = new Font("Microsoft Sans Serif", 13F, FontStyle.Bold),
+                    ForeColor = Color.DodgerBlue,
+                    AutoSize  = true,
+                    Location  = new Point(FormWidth - 180, 22)
+                });
+            }
+
+            // ── Payment method toggle buttons ─────────────────────────────────────
+            btnCash   = MakeMethodBtn("Cash",   new Point(20,  MethodBtnTop));
+            btnCard   = MakeMethodBtn("Card",   new Point(200, MethodBtnTop));
+            btnCredit = MakeMethodBtn("Credit", new Point(380, MethodBtnTop));
+
+            btnCash.Click   += (s, e) => SelectMethod("CASH");
+            btnCard.Click   += (s, e) => SelectMethod("CARD");
+            btnCredit.Click += (s, e) => SelectMethod("CREDIT");
+
+            Controls.AddRange(new Control[] { btnCash, btnCard, btnCredit });
+
+            // ── Credit accounts panel ─────────────────────────────────────────────
+            creditPanel = new Panel
+            {
+                Location    = new Point(20, CreditPanelTop),
+                Size        = new Size(FormWidth - 40, CreditPanelH),
+                Visible     = false
+            };
+
+            creditPanel.Controls.Add(new Label
+            {
+                Text     = "Select Credit Account",
+                Font     = new Font("Microsoft Sans Serif", 10F, FontStyle.Bold),
                 AutoSize = true,
-                Checked = true
-            };
+                Location = new Point(0, 0)
+            });
 
-            rbCard = new RadioButton
+            creditPanel.Controls.Add(new Label
             {
-                Text = "Card",
-                Font = new Font("Microsoft Sans Serif", 13F),
-                Location = new Point(175, 65),
-                AutoSize = true
-            };
-
-            rbCredit = new RadioButton
-            {
-                Text = "Credit",
-                Font = new Font("Microsoft Sans Serif", 13F),
-                Location = new Point(305, 65),
-                AutoSize = true
-            };
-
-            lblCreditAccount = new Label
-            {
-                Text = "Credit Account:",
-                Font = new Font("Microsoft Sans Serif", 11F, FontStyle.Bold),
+                Text     = "Search by name or label:",
+                Font     = new Font("Microsoft Sans Serif", 9F),
+                ForeColor = Color.DimGray,
                 AutoSize = true,
-                Location = new Point(20, 110),
-                Visible = false
-            };
+                Location = new Point(0, 24)
+            });
 
-            cmbCreditAccount = new ComboBox
+            txtSearch = new TextBox
             {
-                Font = new Font("Microsoft Sans Serif", 11F),
-                Location = new Point(20, 135),
-                Size = new Size(400, 30),
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Visible = false
+                Font     = new Font("Microsoft Sans Serif", 11F),
+                Location = new Point(0, 44),
+                Size     = new Size(FormWidth - 40, 28)
             };
+            txtSearch.TextChanged += (s, e) => RefreshList(txtSearch.Text);
+            creditPanel.Controls.Add(txtSearch);
 
+            lstAccounts = new ListBox
+            {
+                Font          = new Font("Microsoft Sans Serif", 11F),
+                Location      = new Point(0, 80),
+                Size          = new Size(FormWidth - 40, 140),
+                IntegralHeight = false,
+                ScrollAlwaysVisible = true
+            };
+            creditPanel.Controls.Add(lstAccounts);
+
+            lblNoAccounts = new Label
+            {
+                Font      = new Font("Microsoft Sans Serif", 10F, FontStyle.Italic),
+                ForeColor = Color.Gray,
+                Location  = new Point(0, 80),
+                Size      = new Size(FormWidth - 40, 60),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Visible   = false
+            };
+            creditPanel.Controls.Add(lblNoAccounts);
+
+            Controls.Add(creditPanel);
+
+            // ── Bottom action buttons ─────────────────────────────────────────────
             btnConfirm = new Button
             {
-                Text = "Confirm",
-                Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Bold),
-                BackColor = Color.DodgerBlue,
-                ForeColor = Color.White,
-                Size = new Size(150, 42),
-                Location = new Point(270, 172),
+                Text                 = "Confirm Payment",
+                Font                 = new Font("Microsoft Sans Serif", 12F, FontStyle.Bold),
+                BackColor            = Color.DodgerBlue,
+                ForeColor            = Color.White,
+                Size                 = new Size(185, 44),
                 UseVisualStyleBackColor = false
             };
+            btnConfirm.Click += BtnConfirm_Click;
 
             btnCancel = new Button
             {
                 Text = "Cancel",
                 Font = new Font("Microsoft Sans Serif", 12F),
-                Size = new Size(120, 42),
-                Location = new Point(20, 172)
+                Size = new Size(120, 44)
             };
-
-            rbCredit.CheckedChanged += (s, e) =>
-            {
-                bool creditSelected = rbCredit.Checked;
-                lblCreditAccount.Visible = creditSelected;
-                cmbCreditAccount.Visible = creditSelected;
-                int newHeight = creditSelected ? 280 : 230;
-                ClientSize = new Size(440, newHeight);
-                int btnY = newHeight - 58;
-                btnConfirm.Location = new Point(270, btnY);
-                btnCancel.Location = new Point(20, btnY);
-            };
-
-            btnConfirm.Click += BtnConfirm_Click;
             btnCancel.Click += (s, e) => { DialogResult = DialogResult.Cancel; Close(); };
 
-            Controls.AddRange(new Control[] {
-                rbCash, rbCard, rbCredit,
-                lblCreditAccount, cmbCreditAccount,
-                btnConfirm, btnCancel
-            });
-
+            Controls.Add(btnConfirm);
+            Controls.Add(btnCancel);
             AcceptButton = btnConfirm;
             CancelButton = btnCancel;
         }
 
-        private void LoadCreditAccounts()
+        private Button MakeMethodBtn(string text, Point location)
+        {
+            var btn = new Button
+            {
+                Text      = text,
+                Font      = new Font("Microsoft Sans Serif", 13F, FontStyle.Bold),
+                Size      = new Size(160, 62),
+                Location  = location,
+                FlatStyle = FlatStyle.Flat,
+                Cursor    = Cursors.Hand,
+                UseVisualStyleBackColor = false
+            };
+            btn.FlatAppearance.BorderSize = 2;
+            return btn;
+        }
+
+        // ── State machine ─────────────────────────────────────────────────────────
+        private void SelectMethod(string method)
+        {
+            currentMethod = method;
+
+            Color defaultBg    = Color.FromArgb(235, 235, 235);
+            Color defaultFg    = Color.DimGray;
+            Color defaultBorder = Color.Silver;
+            Color activeBg     = Color.DodgerBlue;
+            Color activeFg     = Color.White;
+
+            foreach (var b in new[] { btnCash, btnCard, btnCredit })
+            {
+                b.BackColor = defaultBg;
+                b.ForeColor = defaultFg;
+                b.FlatAppearance.BorderColor = defaultBorder;
+            }
+
+            Button active = method == "CASH" ? btnCash : method == "CARD" ? btnCard : btnCredit;
+            active.BackColor = activeBg;
+            active.ForeColor = activeFg;
+            active.FlatAppearance.BorderColor = activeBg;
+
+            bool showCredit = method == "CREDIT";
+            creditPanel.Visible = showCredit;
+
+            int formH = showCredit ? ExpandedHeight : CompactHeight;
+            ClientSize = new Size(FormWidth, formH);
+
+            int btnY = formH - 60;
+            btnConfirm.Location = new Point(FormWidth - 185 - 20, btnY);
+            btnCancel.Location  = new Point(20, btnY);
+
+            if (showCredit)
+                txtSearch.Focus();
+        }
+
+        // ── Account loading & search ──────────────────────────────────────────────
+        private void LoadAccounts()
         {
             try
             {
-                creditAccounts = CreditManager.GetActiveAccountsForDropdown();
-                cmbCreditAccount.Items.Clear();
-                foreach (var acc in creditAccounts)
-                    cmbCreditAccount.Items.Add(acc.DisplayName);
-                if (cmbCreditAccount.Items.Count > 0)
-                    cmbCreditAccount.SelectedIndex = 0;
+                DataTable dt = CreditManager.GetActiveAccountsForSelection();
+                allAccounts.Clear();
+                foreach (DataRow row in dt.Rows)
+                {
+                    allAccounts.Add(new AccountEntry
+                    {
+                        AccountId    = Convert.ToInt32(row["account_id"]),
+                        CustomerName = row["customer_name"].ToString(),
+                        Label        = row["label"].ToString(),
+                        Balance      = Convert.ToDecimal(row["outstanding_balance"])
+                    });
+                }
+                RefreshList("");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Could not load credit accounts: " + ex.Message,
-                    "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ShowNoAccounts("Could not load accounts: " + ex.Message);
             }
         }
 
+        private void RefreshList(string search)
+        {
+            string q = (search ?? "").Trim().ToLowerInvariant();
+            filteredAccounts = string.IsNullOrEmpty(q)
+                ? allAccounts.ToList()
+                : allAccounts.Where(a => a.SearchKey.Contains(q)).ToList();
+
+            lstAccounts.Items.Clear();
+
+            if (filteredAccounts.Count == 0)
+            {
+                ShowNoAccounts(allAccounts.Count == 0
+                    ? "No credit accounts yet. Add one from the Credit Accounts screen."
+                    : "No accounts match your search.");
+                return;
+            }
+
+            lstAccounts.Visible   = true;
+            lblNoAccounts.Visible = false;
+
+            foreach (var a in filteredAccounts)
+                lstAccounts.Items.Add(a.DisplayText);
+
+            lstAccounts.SelectedIndex = 0;
+        }
+
+        private void ShowNoAccounts(string message)
+        {
+            lstAccounts.Visible     = false;
+            lblNoAccounts.Text      = message;
+            lblNoAccounts.Visible   = true;
+        }
+
+        // ── Confirm ───────────────────────────────────────────────────────────────
         private void BtnConfirm_Click(object sender, EventArgs e)
         {
-            if (rbCash.Checked)
+            if (currentMethod == "CREDIT")
             {
-                SelectedPaymentMethod = "CASH";
-            }
-            else if (rbCard.Checked)
-            {
-                SelectedPaymentMethod = "CARD";
-            }
-            else if (rbCredit.Checked)
-            {
-                if (creditAccounts == null || creditAccounts.Count == 0 || cmbCreditAccount.SelectedIndex < 0)
+                if (filteredAccounts.Count == 0 || lstAccounts.SelectedIndex < 0)
                 {
-                    MessageBox.Show("Please select a credit account.\nAdd one from the Credit section on the home screen first.",
-                        "Credit Account Required", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(
+                        "Please select a credit account from the list.",
+                        "Credit Account Required",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
                     return;
                 }
-                SelectedPaymentMethod = "CREDIT";
-                SelectedCreditAccountId = creditAccounts[cmbCreditAccount.SelectedIndex].AccountId;
-                SelectedCreditAccountName = creditAccounts[cmbCreditAccount.SelectedIndex].DisplayName;
+
+                AccountEntry selected = filteredAccounts[lstAccounts.SelectedIndex];
+                SelectedPaymentMethod    = "CREDIT";
+                SelectedCreditAccountId  = selected.AccountId;
+                SelectedCreditAccountName = selected.DisplayText;
+            }
+            else
+            {
+                SelectedPaymentMethod = currentMethod;
             }
 
             DialogResult = DialogResult.OK;
             Close();
+        }
+
+        // ── Account model ─────────────────────────────────────────────────────────
+        private class AccountEntry
+        {
+            public int     AccountId    { get; set; }
+            public string  CustomerName { get; set; }
+            public string  Label        { get; set; }
+            public decimal Balance      { get; set; }
+
+            public string SearchKey =>
+                (CustomerName + " " + Label).ToLowerInvariant();
+
+            public string DisplayText
+            {
+                get
+                {
+                    string nameLabel = string.IsNullOrWhiteSpace(Label)
+                        ? CustomerName
+                        : $"{CustomerName}  ({Label})";
+
+                    string balStr = Balance > 0
+                        ? $"Rs. {Balance:N2} outstanding"
+                        : Balance < 0
+                            ? $"Rs. {Math.Abs(Balance):N2} in credit"
+                            : "Settled";
+
+                    return $"{nameLabel}   —   {balStr}";
+                }
+            }
         }
 
         private void InitializeComponent() { }

@@ -42,27 +42,23 @@ namespace WindowsFormsApp1
             }
         }
 
-        public static List<(int AccountId, string DisplayName)> GetActiveAccountsForDropdown()
+        public static DataTable GetActiveAccountsForSelection()
         {
-            var result = new List<(int, string)>();
             using (var conn = new MySqlConnection(Conn))
             {
                 conn.Open();
-                string query = "SELECT account_id, customer_name, label FROM credit_accounts WHERE is_active = 1 ORDER BY customer_name, label";
-                using (var cmd = new MySqlCommand(query, conn))
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        int id = Convert.ToInt32(reader["account_id"]);
-                        string name = reader["customer_name"].ToString();
-                        string label = reader["label"].ToString();
-                        string display = string.IsNullOrWhiteSpace(label) ? name : $"{name}  ({label})";
-                        result.Add((id, display));
-                    }
-                }
+                const string query = @"
+                    SELECT ca.account_id, ca.customer_name, ca.label,
+                           COALESCE(SUM(CASE WHEN ct.direction = 'DEBIT' THEN ct.amount ELSE -ct.amount END), 0) AS outstanding_balance
+                    FROM credit_accounts ca
+                    LEFT JOIN credit_transactions ct ON ct.account_id = ca.account_id
+                    WHERE ca.is_active = 1
+                    GROUP BY ca.account_id
+                    ORDER BY ca.customer_name ASC, ca.label ASC";
+                var dt = new DataTable();
+                new MySqlDataAdapter(new MySqlCommand(query, conn)).Fill(dt);
+                return dt;
             }
-            return result;
         }
 
         public static int CreateAccount(string customerName, string label)

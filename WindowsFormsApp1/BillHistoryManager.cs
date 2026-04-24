@@ -46,6 +46,11 @@ namespace WindowsFormsApp1
 
         public static string SaveBillFromDataTable(string salesperson, decimal totalAmount, decimal discountAmount, DataTable itemsTable, string clientSubmissionId = null)
         {
+            return SaveBillFromDataTable(salesperson, totalAmount, discountAmount, itemsTable, clientSubmissionId, "CASH");
+        }
+
+        public static string SaveBillFromDataTable(string salesperson, decimal totalAmount, decimal discountAmount, DataTable itemsTable, string clientSubmissionId, string paymentMethod)
+        {
             List<BillLineRecord> items = new List<BillLineRecord>();
             foreach (DataRow row in itemsTable.Rows)
             {
@@ -58,7 +63,7 @@ namespace WindowsFormsApp1
                 });
             }
 
-            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, "CASH");
+            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, paymentMethod ?? "CASH");
         }
 
         public static int GetBillIdByCode(string billCode)

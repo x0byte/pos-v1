@@ -388,15 +388,26 @@ namespace WindowsFormsApp1
                     // Check if the user clicked OK and entered a name
                     if (!string.IsNullOrEmpty(emp_code))
                     {
+                        PaymentMethodDialog paymentDlg = new PaymentMethodDialog();
+                        if (paymentDlg.ShowDialog() != DialogResult.OK)
+                        {
+                            paymentDlg.Dispose();
+                            return;
+                        }
+                        string paymentMethod = paymentDlg.SelectedPaymentMethod;
+                        int creditAccountId = paymentDlg.SelectedCreditAccountId;
+                        paymentDlg.Dispose();
+
                         string cashierName = emp_code;
                         decimal totalAmount = CalculateGrandTotalFromMemory();
                         decimal discountAmount = totalAmount - decimal.Parse(lblTotalPrice.Text);
+                        decimal grandTotal = totalAmount - discountAmount;
 
                         // Save first so the bill code is available for the receipt
                         string billCode;
                         try
                         {
-                            billCode = BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountAmount, currentClientSubmissionId);
+                            billCode = BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountAmount, currentClientSubmissionId, paymentMethod);
                         }
                         catch (Exception ex)
                         {
@@ -419,6 +430,16 @@ namespace WindowsFormsApp1
 
                         PDFConverter converter = new PDFConverter();
                         converter.ConvertPrintDocumentToPdf(dataGridBilling, cashierName, totalAmount, discountAmount, billCode, billCreatedAt);
+
+                        if (paymentMethod == "CREDIT" && creditAccountId > 0 && !billCode.StartsWith("LOCAL-"))
+                        {
+                            try
+                            {
+                                CreditManager.AddTransaction(creditAccountId, "BILL", grandTotal, "DEBIT",
+                                    "POS sale", billCode, DateTime.Today);
+                            }
+                            catch { }
+                        }
 
                         if (!string.IsNullOrWhiteSpace(pendingSnapshotSessionId))
                         {

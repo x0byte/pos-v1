@@ -58,7 +58,10 @@ namespace WindowsFormsApp1
                 dataGridItems.DataSource = items;
                 FormatItemsGrid();
 
-                this.Text = "Bill Details — " + billHeader["bill_code"].ToString();
+                string paymentMethod = billHeader.Table.Columns.Contains("payment_method")
+                    ? billHeader["payment_method"]?.ToString() ?? "CASH"
+                    : "CASH";
+                this.Text = $"Bill Details — {billHeader["bill_code"]}  [{paymentMethod}]";
             }
             catch (Exception ex)
             {

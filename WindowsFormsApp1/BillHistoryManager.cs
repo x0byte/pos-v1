@@ -13,10 +13,15 @@ namespace WindowsFormsApp1
 
         public static string SaveBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount)
         {
-            return SaveBill(dataGridView, salesperson, totalAmount, discountAmount, null);
+            return SaveBill(dataGridView, salesperson, totalAmount, discountAmount, null, "CASH");
         }
 
         public static string SaveBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount, string clientSubmissionId)
+        {
+            return SaveBill(dataGridView, salesperson, totalAmount, discountAmount, clientSubmissionId, "CASH");
+        }
+
+        public static string SaveBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount, string clientSubmissionId, string paymentMethod)
         {
             List<BillLineRecord> items = new List<BillLineRecord>();
 
@@ -36,7 +41,7 @@ namespace WindowsFormsApp1
                 });
             }
 
-            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now);
+            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, paymentMethod ?? "CASH");
         }
 
         public static string SaveBillFromDataTable(string salesperson, decimal totalAmount, decimal discountAmount, DataTable itemsTable, string clientSubmissionId = null)
@@ -53,10 +58,24 @@ namespace WindowsFormsApp1
                 });
             }
 
-            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now);
+            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, "CASH");
         }
 
-        private static string SaveBillInternal(string salesperson, decimal totalAmount, decimal discountAmount, List<BillLineRecord> items, string clientSubmissionId, DateTime occurredAt)
+        public static int GetBillIdByCode(string billCode)
+        {
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                using (MySqlCommand cmd = new MySqlCommand("SELECT bill_id FROM bill_history WHERE bill_code = @code LIMIT 1", conn))
+                {
+                    cmd.Parameters.AddWithValue("@code", billCode);
+                    object result = cmd.ExecuteScalar();
+                    return result != null && result != DBNull.Value ? Convert.ToInt32(result) : 0;
+                }
+            }
+        }
+
+        private static string SaveBillInternal(string salesperson, decimal totalAmount, decimal discountAmount, List<BillLineRecord> items, string clientSubmissionId, DateTime occurredAt, string paymentMethod)
         {
             decimal grandTotal = totalAmount - discountAmount;
             int itemCount = items.Count;
@@ -78,9 +97,9 @@ namespace WindowsFormsApp1
 
                 try
                 {
-                    string insertHeader = @"INSERT INTO bill_history 
-                        (bill_code, date_time, salesperson, total_amount, discount_amount, grand_total, item_count, client_submission_id) 
-                        VALUES ('', @date_time, @salesperson, @total_amount, @discount_amount, @grand_total, @item_count, @client_submission_id)";
+                    string insertHeader = @"INSERT INTO bill_history
+                        (bill_code, date_time, salesperson, total_amount, discount_amount, grand_total, item_count, client_submission_id, payment_method)
+                        VALUES ('', @date_time, @salesperson, @total_amount, @discount_amount, @grand_total, @item_count, @client_submission_id, @payment_method)";
 
                     MySqlCommand cmd = new MySqlCommand(insertHeader, conn, transaction);
                     cmd.Parameters.AddWithValue("@date_time", occurredAt);
@@ -90,6 +109,7 @@ namespace WindowsFormsApp1
                     cmd.Parameters.AddWithValue("@grand_total", grandTotal);
                     cmd.Parameters.AddWithValue("@item_count", itemCount);
                     cmd.Parameters.AddWithValue("@client_submission_id", string.IsNullOrWhiteSpace(clientSubmissionId) ? (object)DBNull.Value : clientSubmissionId);
+                    cmd.Parameters.AddWithValue("@payment_method", string.IsNullOrWhiteSpace(paymentMethod) ? "CASH" : paymentMethod);
                     cmd.ExecuteNonQuery();
 
                     long billId = cmd.LastInsertedId;
@@ -210,8 +230,8 @@ namespace WindowsFormsApp1
             using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
                 conn.Open();
-                string query = @"SELECT bill_id, bill_code, date_time, salesperson, item_count, 
-                    grand_total, total_amount, discount_amount 
+                string query = @"SELECT bill_id, bill_code, date_time, salesperson, item_count,
+                    grand_total, total_amount, discount_amount, payment_method
                     FROM bill_history ORDER BY date_time DESC";
 
                 using (MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn))
@@ -229,7 +249,7 @@ namespace WindowsFormsApp1
             {
                 conn.Open();
                 string query = @"SELECT bh.bill_id, bh.bill_code, bh.date_time, bh.salesperson, bh.item_count,
-                    bh.grand_total, bh.total_amount, bh.discount_amount
+                    bh.grand_total, bh.total_amount, bh.discount_amount, bh.payment_method
                     FROM bill_history bh
                     LEFT JOIN employee e ON e.emp_code = bh.salesperson
                     WHERE bh.date_time BETWEEN @fromDate AND @toDate";

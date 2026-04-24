@@ -41,6 +41,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.btnSettings = new System.Windows.Forms.Button();
             this.btnPendingBills = new System.Windows.Forms.Button();
+            this.btnCredit = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             this.SuspendLayout();
@@ -177,12 +178,26 @@
             this.btnPendingBills.UseVisualStyleBackColor = true;
             this.btnPendingBills.Visible = false;
             this.btnPendingBills.Click += new System.EventHandler(this.BtnPendingBills_Click);
-            // 
+            //
+            // btnCredit
+            //
+            this.btnCredit.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnCredit.BackColor = System.Drawing.Color.SteelBlue;
+            this.btnCredit.ForeColor = System.Drawing.Color.White;
+            this.btnCredit.Location = new System.Drawing.Point(360, 636);
+            this.btnCredit.Name = "btnCredit";
+            this.btnCredit.Size = new System.Drawing.Size(170, 56);
+            this.btnCredit.TabIndex = 12;
+            this.btnCredit.Text = "Credit Accounts";
+            this.btnCredit.UseVisualStyleBackColor = false;
+            this.btnCredit.Click += new System.EventHandler(this.BtnCredit_Click);
+            //
             // Home
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1106, 729);
+            this.Controls.Add(this.btnCredit);
             this.Controls.Add(this.btnPendingBills);
             this.Controls.Add(this.btnSettings);
             this.Controls.Add(this.label5);
@@ -221,5 +236,6 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Button btnSettings;
         private System.Windows.Forms.Button btnPendingBills;
+        private System.Windows.Forms.Button btnCredit;
     }
 }

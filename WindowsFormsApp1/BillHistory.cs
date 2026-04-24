@@ -52,6 +52,7 @@ namespace WindowsFormsApp1
             FormatColumn(dataGridHistory, "date_time", "Date & Time", 220, format: "yyyy-MM-dd  hh:mm tt");
             FormatColumn(dataGridHistory, "salesperson", "Salesperson", 180);
             FormatColumn(dataGridHistory, "item_count", "Items", 90, alignment: DataGridViewContentAlignment.MiddleCenter);
+            FormatColumn(dataGridHistory, "payment_method", "Payment", 110, alignment: DataGridViewContentAlignment.MiddleCenter);
 
             var colGrandTotal = dataGridHistory.Columns["grand_total"];
             if (colGrandTotal != null)

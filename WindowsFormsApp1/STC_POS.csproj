@@ -222,6 +222,22 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="BillHistoryManager.cs" />
+    <Compile Include="CreditManager.cs" />
+    <Compile Include="PaymentMethodDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="NewCreditAccountDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AddCreditTransactionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CreditHome.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CreditAccountDetail.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="BillPersistenceModels.cs" />
     <Compile Include="DatabaseConfig.cs" />
     <Compile Include="DesktopPosLocalAudit.cs" />

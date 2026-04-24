@@ -95,5 +95,12 @@ namespace WindowsFormsApp1
             inbox.Show();
             this.Hide();
         }
+
+        private void BtnCredit_Click(object sender, EventArgs e)
+        {
+            CreditHome creditHome = new CreditHome();
+            creditHome.Show();
+            this.Hide();
+        }
     }
 }

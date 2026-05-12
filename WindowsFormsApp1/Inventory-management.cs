@@ -1,31 +1,52 @@
-﻿using Microsoft.ReportingServices.Diagnostics.Internal;
-using MySql.Data.MySqlClient;
+﻿using MySql.Data.MySqlClient;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace WindowsFormsApp1
 {
     public partial class Inventory_management : Form
     {
+        private static readonly Regex SafeSearchPattern = new Regex(@"^[a-zA-Z0-9\s]*$", RegexOptions.Compiled);
         private string connectionString = DatabaseConfig.ConnectionString;
         public Inventory_management()
         {
             InitializeComponent();
+            dataGridInventory.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            InitializeStockRefreshControls();
             LoadInventoryData();
             txtSearch.TextChanged += TxtSearch_TextChanged;
 
             this.dataGridInventory.CellClick += new DataGridViewCellEventHandler(this.dataGridInventory_CellClick);
 
 
+        }
+
+        private void InitializeStockRefreshControls()
+        {
+            txtSearch.Width = Math.Max(250, button1.Left - txtSearch.Left - 120);
+
+            Button btnRefreshStock = new Button
+            {
+                Name = "btnRefreshStock",
+                Text = "Refresh",
+                Font = new Font("Microsoft Sans Serif", 10.8F, FontStyle.Regular, GraphicsUnit.Point, 0),
+                Location = new Point(button1.Left - 105, button1.Top),
+                Size = new Size(95, button1.Height),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            btnRefreshStock.Click += BtnRefreshStock_Click;
+            Controls.Add(btnRefreshStock);
+            btnRefreshStock.BringToFront();
+        }
+
+        private void BtnRefreshStock_Click(object sender, EventArgs e)
+        {
+            LoadInventoryData(true);
         }
 
         private void dataGridInventory_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -50,21 +71,17 @@ namespace WindowsFormsApp1
         {
             
         }
-        private void LoadInventoryData()
+        private void LoadInventoryData(bool refreshCache = false)
         {
             try
             {
-                using (MySqlConnection conn = new MySqlConnection(connectionString))
+                if (refreshCache)
                 {
-                    conn.Open();
-                    string query = "SELECT * FROM inventory";
-                    using (MySqlDataAdapter adapter = new MySqlDataAdapter(query, conn))
-                    {
-                        DataTable dataTable = new DataTable();
-                        adapter.Fill(dataTable);
-                        dataGridInventory.DataSource = dataTable;
-                    }
+                    AppCache.Refresh();
                 }
+
+                dataGridInventory.DataSource = AppCache.GetInventoryDataTable();
+                ApplySearchFilter();
             }
             catch (Exception ex)
             {
@@ -73,28 +90,33 @@ namespace WindowsFormsApp1
         }
         private void TxtSearch_TextChanged(object sender, EventArgs e)
         {
+            ApplySearchFilter();
+        }
+
+        private void ApplySearchFilter()
+        {
             string filterExpression = txtSearch.Text.Trim();
+            DataTable inventoryTable = dataGridInventory.DataSource as DataTable;
+            if (inventoryTable == null)
+            {
+                return;
+            }
+
             if (string.IsNullOrEmpty(filterExpression))
             {
-                // If the search box is empty, show all rows
-                (dataGridInventory.DataSource as DataTable).DefaultView.RowFilter = "";
+                inventoryTable.DefaultView.RowFilter = "";
+                return;
             }
-            else
+
+            if (!SafeSearchPattern.IsMatch(filterExpression))
             {
-                // Validate input: allow only alphanumeric characters and spaces
-                if (!Regex.IsMatch(filterExpression, @"^[a-zA-Z0-9\s]*$"))
-                {
-                    MessageBox.Show("Invalid input. Please use only letters, numbers, and spaces.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                // Escape special characters for the filter expression
-                filterExpression = filterExpression.Replace("'", "''");
-
-                // Apply the filter based on item_name and keywords columns
-                (dataGridInventory.DataSource as DataTable).DefaultView.RowFilter =
-                    string.Format("item_name LIKE '%{0}%' OR keywords LIKE '%{0}%' OR barcode LIKE '%{0}%'", filterExpression);
+                MessageBox.Show("Invalid input. Please use only letters, numbers, and spaces.", "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
+
+            filterExpression = filterExpression.Replace("'", "''");
+            inventoryTable.DefaultView.RowFilter =
+                string.Format("item_name LIKE '%{0}%' OR keywords LIKE '%{0}%' OR barcode LIKE '%{0}%'", filterExpression);
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -109,7 +131,7 @@ namespace WindowsFormsApp1
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
-            Home home = new Home();
+            Home home = System.Windows.Forms.Application.OpenForms.OfType<Home>().FirstOrDefault() ?? new Home();
             home.Show();
             this.Hide();
         }
@@ -154,7 +176,7 @@ namespace WindowsFormsApp1
                 }
             }
 
-            LoadInventoryData();
+            LoadInventoryData(true);
             clearTexts();
                 
         }
@@ -258,11 +280,6 @@ namespace WindowsFormsApp1
                         }
 
                         MessageBox.Show("Record updated successfully!");
-
-                        MySqlDataAdapter da = new MySqlDataAdapter("SELECT * FROM inventory", conn);
-                        DataTable dt = new DataTable();
-                        da.Fill(dt);
-                        dataGridInventory.DataSource = dt;
                     }
                     catch (Exception ex)
                     {
@@ -270,49 +287,34 @@ namespace WindowsFormsApp1
                     }
                 }
             }
-            else if(dialogResult == DialogResult.No)
-            {
 
-            }
-            
-            LoadInventoryData();
+            LoadInventoryData(true);
             clearTexts();
         }
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
-            DialogResult dialogResult = MessageBox.Show("Are you sure you want to update this item?", "Confirmation", MessageBoxButtons.YesNo);
-            if (dialogResult == DialogResult.Yes)
-            {
-                if (dataGridInventory.SelectedRows.Count > 0)
-                {
-                    int selectedId = Convert.ToInt32(dataGridInventory.SelectedRows[0].Cells["id"].Value);
+            if (MessageBox.Show("Are you sure you want to delete this item?", "Confirmation", MessageBoxButtons.YesNo) != DialogResult.Yes)
+                return;
 
-                    using (MySqlConnection conn = new MySqlConnection(connectionString))
-                    {
-                        conn.Open();
-                        string sql = "DELETE FROM inventory WHERE id = @id";
-                        using (MySqlCommand cmd = new MySqlCommand(sql, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@id", selectedId);
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-                    LoadInventoryData(); // Reload data to reflect changes
-                }
-                else
-                {
-                    MessageBox.Show("Please select a row to delete.", "Delete Entry", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-            }
-            else if (dialogResult == DialogResult.No) 
+            if (dataGridInventory.SelectedRows.Count == 0)
             {
-                
+                MessageBox.Show("Please select a row to delete.", "Delete Entry", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
 
-            LoadInventoryData();
+            int selectedId = Convert.ToInt32(dataGridInventory.SelectedRows[0].Cells["id"].Value);
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                using (MySqlCommand cmd = new MySqlCommand("DELETE FROM inventory WHERE id = @id", conn))
+                {
+                    cmd.Parameters.AddWithValue("@id", selectedId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            LoadInventoryData(true);
             clearTexts();
-            
         }
     }
 }

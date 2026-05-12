@@ -34,6 +34,8 @@ namespace WindowsFormsApp1
             this.lblGrandTotalRs = new System.Windows.Forms.Label();
             this.lblGrandTotal = new System.Windows.Forms.Label();
             this.btnReprint = new System.Windows.Forms.Button();
+            this.btnDeleteBill = new System.Windows.Forms.Button();
+            this.btnDeleteAndMoveToBilling = new System.Windows.Forms.Button();
             this.btnClose = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridItems)).BeginInit();
             this.SuspendLayout();
@@ -108,6 +110,9 @@ namespace WindowsFormsApp1
             this.dataGridItems.RowTemplate.Height = 32;
             this.dataGridItems.Size = new System.Drawing.Size(940, 400);
             this.dataGridItems.TabIndex = 6;
+            this.dataGridItems.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             // 
             // lblTotalLabel
             // 
@@ -118,6 +123,7 @@ namespace WindowsFormsApp1
             this.lblTotalLabel.Size = new System.Drawing.Size(56, 25);
             this.lblTotalLabel.TabIndex = 7;
             this.lblTotalLabel.Text = "Total";
+            this.lblTotalLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             // 
             // lblTotalRs
             // 
@@ -128,6 +134,7 @@ namespace WindowsFormsApp1
             this.lblTotalRs.Size = new System.Drawing.Size(45, 25);
             this.lblTotalRs.TabIndex = 8;
             this.lblTotalRs.Text = "Rs.";
+            this.lblTotalRs.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             // 
             // lblTotal
             // 
@@ -137,6 +144,7 @@ namespace WindowsFormsApp1
             this.lblTotal.Name = "lblTotal";
             this.lblTotal.Size = new System.Drawing.Size(0, 31);
             this.lblTotal.TabIndex = 9;
+            this.lblTotal.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             // 
             // lblDiscountLabel
             // 
@@ -147,6 +155,7 @@ namespace WindowsFormsApp1
             this.lblDiscountLabel.Size = new System.Drawing.Size(95, 25);
             this.lblDiscountLabel.TabIndex = 10;
             this.lblDiscountLabel.Text = "Discount";
+            this.lblDiscountLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             // 
             // lblDiscountRs
             // 
@@ -157,6 +166,7 @@ namespace WindowsFormsApp1
             this.lblDiscountRs.Size = new System.Drawing.Size(45, 25);
             this.lblDiscountRs.TabIndex = 11;
             this.lblDiscountRs.Text = "Rs.";
+            this.lblDiscountRs.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             // 
             // lblDiscount
             // 
@@ -166,6 +176,7 @@ namespace WindowsFormsApp1
             this.lblDiscount.Name = "lblDiscount";
             this.lblDiscount.Size = new System.Drawing.Size(0, 29);
             this.lblDiscount.TabIndex = 12;
+            this.lblDiscount.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             // 
             // lblGrandTotalLabel
             // 
@@ -176,6 +187,7 @@ namespace WindowsFormsApp1
             this.lblGrandTotalLabel.Size = new System.Drawing.Size(153, 29);
             this.lblGrandTotalLabel.TabIndex = 13;
             this.lblGrandTotalLabel.Text = "Grand Total";
+            this.lblGrandTotalLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             // 
             // lblGrandTotalRs
             // 
@@ -186,6 +198,7 @@ namespace WindowsFormsApp1
             this.lblGrandTotalRs.Size = new System.Drawing.Size(48, 29);
             this.lblGrandTotalRs.TabIndex = 14;
             this.lblGrandTotalRs.Text = "Rs.";
+            this.lblGrandTotalRs.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             // 
             // lblGrandTotal
             // 
@@ -195,28 +208,59 @@ namespace WindowsFormsApp1
             this.lblGrandTotal.Name = "lblGrandTotal";
             this.lblGrandTotal.Size = new System.Drawing.Size(0, 42);
             this.lblGrandTotal.TabIndex = 15;
+            this.lblGrandTotal.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             // 
             // btnReprint
             // 
             this.btnReprint.BackColor = System.Drawing.Color.LimeGreen;
             this.btnReprint.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnReprint.Location = new System.Drawing.Point(200, 600);
+            this.btnReprint.Location = new System.Drawing.Point(25, 600);
             this.btnReprint.Name = "btnReprint";
-            this.btnReprint.Size = new System.Drawing.Size(240, 65);
+            this.btnReprint.Size = new System.Drawing.Size(190, 65);
             this.btnReprint.TabIndex = 16;
             this.btnReprint.Text = "Reprint Bill";
             this.btnReprint.UseVisualStyleBackColor = false;
+            this.btnReprint.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.btnReprint.Click += new System.EventHandler(this.btnReprint_Click);
+            // 
+            // btnDeleteBill
+            // 
+            this.btnDeleteBill.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(42)))), ((int)(((byte)(42)))));
+            this.btnDeleteBill.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDeleteBill.ForeColor = System.Drawing.Color.White;
+            this.btnDeleteBill.Location = new System.Drawing.Point(235, 600);
+            this.btnDeleteBill.Name = "btnDeleteBill";
+            this.btnDeleteBill.Size = new System.Drawing.Size(190, 65);
+            this.btnDeleteBill.TabIndex = 18;
+            this.btnDeleteBill.Text = "Delete Bill";
+            this.btnDeleteBill.UseVisualStyleBackColor = false;
+            this.btnDeleteBill.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnDeleteBill.Click += new System.EventHandler(this.btnDeleteBill_Click);
+            // 
+            // btnDeleteAndMoveToBilling
+            // 
+            this.btnDeleteAndMoveToBilling.BackColor = System.Drawing.Color.DodgerBlue;
+            this.btnDeleteAndMoveToBilling.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDeleteAndMoveToBilling.ForeColor = System.Drawing.Color.White;
+            this.btnDeleteAndMoveToBilling.Location = new System.Drawing.Point(445, 600);
+            this.btnDeleteAndMoveToBilling.Name = "btnDeleteAndMoveToBilling";
+            this.btnDeleteAndMoveToBilling.Size = new System.Drawing.Size(250, 65);
+            this.btnDeleteAndMoveToBilling.TabIndex = 19;
+            this.btnDeleteAndMoveToBilling.Text = "Delete && Move to Billing";
+            this.btnDeleteAndMoveToBilling.UseVisualStyleBackColor = false;
+            this.btnDeleteAndMoveToBilling.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnDeleteAndMoveToBilling.Click += new System.EventHandler(this.btnDeleteAndMoveToBilling_Click);
             // 
             // btnClose
             // 
             this.btnClose.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnClose.Location = new System.Drawing.Point(530, 600);
+            this.btnClose.Location = new System.Drawing.Point(735, 600);
             this.btnClose.Name = "btnClose";
-            this.btnClose.Size = new System.Drawing.Size(240, 65);
+            this.btnClose.Size = new System.Drawing.Size(230, 65);
             this.btnClose.TabIndex = 17;
             this.btnClose.Text = "Close";
             this.btnClose.UseVisualStyleBackColor = true;
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
             // BillDetailView
@@ -225,6 +269,8 @@ namespace WindowsFormsApp1
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1000, 690);
             this.Controls.Add(this.btnClose);
+            this.Controls.Add(this.btnDeleteAndMoveToBilling);
+            this.Controls.Add(this.btnDeleteBill);
             this.Controls.Add(this.btnReprint);
             this.Controls.Add(this.lblGrandTotal);
             this.Controls.Add(this.lblGrandTotalRs);
@@ -242,8 +288,9 @@ namespace WindowsFormsApp1
             this.Controls.Add(this.lblDateTimeLabel);
             this.Controls.Add(this.lblBillCode);
             this.Controls.Add(this.lblBillCodeLabel);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
+            this.MaximizeBox = true;
+            this.MinimumSize = new System.Drawing.Size(860, 620);
             this.MinimizeBox = false;
             this.Name = "BillDetailView";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
@@ -273,6 +320,8 @@ namespace WindowsFormsApp1
         private System.Windows.Forms.Label lblGrandTotalRs;
         private System.Windows.Forms.Label lblGrandTotal;
         private System.Windows.Forms.Button btnReprint;
+        private System.Windows.Forms.Button btnDeleteBill;
+        private System.Windows.Forms.Button btnDeleteAndMoveToBilling;
         private System.Windows.Forms.Button btnClose;
     }
 }

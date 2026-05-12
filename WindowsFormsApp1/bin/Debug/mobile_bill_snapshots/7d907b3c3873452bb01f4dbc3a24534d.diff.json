@@ -1,0 +1,23 @@
+{
+  "session_id": "7d907b3c3873452bb01f4dbc3a24534d",
+  "generated_at": "2026-04-27T02:34:17.4888541+10:00",
+  "added": [],
+  "removed": [],
+  "modified": [
+    {
+      "index": 0,
+      "original": {
+        "ItemName": "MDK ඉදිආප්ප පිටි 1kg (රතු)",
+        "Rate": 320.00,
+        "Amount": 1.0000,
+        "DiscountedPrice": 320.00
+      },
+      "current": {
+        "ItemName": "MDK ඉදිආප්ප පිටි 1kg (රතු)",
+        "Rate": 320.00,
+        "Amount": 1.0000,
+        "DiscountedPrice": 310.000000
+      }
+    }
+  ]
+}

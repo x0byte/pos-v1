@@ -53,6 +53,9 @@ namespace WindowsFormsApp1
 
             dataGridBilling.Font = new Font("Arial", 14);
             InitializeStockRefreshControls();
+            this.Shown += Billing_Shown;
+            this.Resize += Billing_Resize;
+            ApplyResponsiveLayout();
             UpdateStockSyncLabel();
             UpdateSyncStatusLabel();
             StartSyncRetryTimer();
@@ -60,6 +63,148 @@ namespace WindowsFormsApp1
             CheckForPausesInMemory();
             UpdatePauseButtonState();
 
+        }
+
+        private void Billing_Shown(object sender, EventArgs e)
+        {
+            ApplyWorkingAreaBounds();
+            ApplyResponsiveLayout();
+        }
+
+        private void Billing_Resize(object sender, EventArgs e)
+        {
+            ApplyWorkingAreaBounds();
+            ApplyResponsiveLayout();
+        }
+
+        private void ApplyWorkingAreaBounds()
+        {
+            Screen screen = Screen.FromControl(this);
+            if (screen != null)
+            {
+                MaximizedBounds = screen.WorkingArea;
+            }
+        }
+
+        private void ApplyResponsiveLayout()
+        {
+            if (dataGridBilling == null || ClientSize.Width <= 0 || ClientSize.Height <= 0)
+            {
+                return;
+            }
+
+            SuspendLayout();
+            try
+            {
+                AutoScroll = false;
+
+                int margin = 12;
+                int clientWidth = ClientSize.Width;
+                int clientHeight = ClientSize.Height;
+                bool compact = clientHeight < 760;
+                int leftWidth = Math.Min(620, Math.Max(520, (int)(clientWidth * 0.46)));
+                int rightX = leftWidth + margin;
+                int rightWidth = Math.Max(320, clientWidth - rightX - margin);
+
+                int bottomMargin = compact ? 8 : 12;
+                int gap = compact ? 6 : 12;
+                int newBillHeight = compact ? 38 : 58;
+                int checkoutHeight = compact ? 42 : 62;
+                int editHeight = compact ? 38 : 56;
+                int addHeight = compact ? 46 : 70;
+                int newBillY = Math.Max(560, clientHeight - bottomMargin - newBillHeight);
+                int checkoutY = newBillY - gap - checkoutHeight;
+                int editY = checkoutY - gap - editHeight;
+                int addY = editY - gap - addHeight;
+
+                pictureBox1.SetBounds(4, 3, 63, 62);
+                btnScan.SetBounds(214, 18, Math.Max(250, leftWidth - 226), 53);
+
+                label1.SetBounds(12, compact ? 72 : 82, 130, 25);
+                txtItemName.SetBounds(17, compact ? 98 : 111, leftWidth - 25, 34);
+
+                int suggestionY = txtItemName.Bottom + 7;
+                int fixedSpaceBelowSuggestions = 250;
+                int suggestionHeight = Math.Max(55, Math.Min(compact ? 95 : 149, addY - suggestionY - fixedSpaceBelowSuggestions));
+                listBoxSuggestions.SetBounds(17, suggestionY, leftWidth - 25, suggestionHeight);
+
+                int priceLabelY = listBoxSuggestions.Bottom + (compact ? 8 : 14);
+                int priceInputY = priceLabelY + (compact ? 34 : 41);
+                int secondColumnX = Math.Min(291, leftWidth / 2);
+                int helpX = Math.Min(leftWidth - 130, secondColumnX + 190);
+
+                label2.SetBounds(22, priceLabelY, 160, 30);
+                txtRetailPrice.SetBounds(64, priceInputY, 155, 41);
+                label3.SetBounds(28, priceInputY + 19, 30, 16);
+                label4.SetBounds(secondColumnX, priceLabelY, 115, 30);
+                txtAmount.SetBounds(secondColumnX, priceInputY, 156, 41);
+                label5.SetBounds(helpX, priceLabelY - 10, 120, 100);
+
+                int discountLabelY = priceInputY + (compact ? 56 : 60);
+                int discountInputY = discountLabelY + (compact ? 35 : 49);
+                label6.SetBounds(25, discountLabelY, 220, 30);
+                txtDisEach.SetBounds(31, discountInputY, 125, 41);
+                label7.SetBounds(secondColumnX, discountLabelY, 230, 30);
+                txtDisWhole.SetBounds(secondColumnX, discountInputY, 125, 41);
+
+                int finalLabelY = Math.Min(discountInputY + 58, addY - 64);
+                int finalValueY = finalLabelY + 30;
+                label8.SetBounds(25, finalLabelY, 250, 25);
+                label9.SetBounds(30, finalValueY + 10, 30, 16);
+                lblFinalPrice.SetBounds(56, finalValueY, 260, 34);
+                label14.SetBounds(secondColumnX + 62, finalLabelY, 70, 25);
+                lblCost.SetBounds(secondColumnX + 69, finalValueY, 150, 34);
+
+                button1.SetBounds(30, addY, leftWidth - 108, addHeight);
+                int editButtonWidth = Math.Max(105, (leftWidth - 124) / 3);
+                btnClear.SetBounds(33, editY, editButtonWidth, editHeight);
+                btnUpdate.SetBounds(33 + editButtonWidth + gap, editY, editButtonWidth, editHeight);
+                btnDelete.SetBounds(33 + ((editButtonWidth + gap) * 2), editY, editButtonWidth, editHeight);
+                button2.SetBounds(33, checkoutY, leftWidth - 108, checkoutHeight);
+                button3.SetBounds(35, newBillY, leftWidth - 110, newBillHeight);
+
+                int topRightButtonWidth = Math.Min(307, Math.Max(190, rightWidth / 4));
+                btnPauseBill.SetBounds(clientWidth - margin - topRightButtonWidth, 18, topRightButtonWidth, 53);
+
+                Control refreshButton = Controls.Find("btnRefreshStock", false).FirstOrDefault();
+                if (refreshButton != null)
+                {
+                    refreshButton.SetBounds(rightX + 18, 20, 140, 36);
+                }
+                if (lblStockSync != null)
+                {
+                    lblStockSync.SetBounds(rightX + 168, 20, 280, 18);
+                }
+                Label syncStatus = Controls.Find("lblSyncStatus", false).FirstOrDefault() as Label;
+                if (syncStatus != null)
+                {
+                    syncStatus.SetBounds(rightX + 168, 40, Math.Max(260, rightWidth - 180), 18);
+                }
+
+                int summaryHeight = compact ? 92 : 112;
+                int summaryY = Math.Max(540, clientHeight - bottomMargin - summaryHeight);
+                int gridHeight = Math.Max(250, summaryY - 98 - gap);
+                dataGridBilling.SetBounds(rightX, 98, rightWidth, gridHeight);
+
+                int totalX = rightX + 5;
+                int countBlockWidth = Math.Min(260, Math.Max(190, rightWidth / 3));
+                int countX = rightX + rightWidth - countBlockWidth;
+                label12.SetBounds(totalX, summaryY + 4, 80, 25);
+                label11.SetBounds(totalX + 11, summaryY + 44, 45, 25);
+                lblTotalPrice.AutoSize = false;
+                lblTotalPrice.TextAlign = ContentAlignment.MiddleLeft;
+                lblTotalPrice.SetBounds(totalX + 62, summaryY + 32, Math.Max(180, countX - totalX - 78), 50);
+
+                label13.SetBounds(countX, summaryY + 4, countBlockWidth - 60, 25);
+                lblCount.AutoSize = false;
+                lblCount.TextAlign = ContentAlignment.MiddleRight;
+                lblCount.SetBounds(countX + countBlockWidth - 72, summaryY + 32, 72, 50);
+                label10.SetBounds(Math.Max(rightX, clientWidth - 420), clientHeight - 28, 405, 22);
+            }
+            finally
+            {
+                ResumeLayout(false);
+            }
         }
         private void InitializeStockRefreshControls()
         {
@@ -161,6 +306,7 @@ namespace WindowsFormsApp1
             };
             syncTimer.Start();
         }
+
         private void TextBox_TextChanged(object sender, EventArgs e)
         {
             string query = txtItemName.Text;
@@ -196,18 +342,10 @@ namespace WindowsFormsApp1
 
         private List<string> GetSuggestions(string query)
         {
-            string normalized = (query ?? string.Empty).Trim().ToLowerInvariant();
-            string noSpace = normalized.Replace(" ", string.Empty);
-
-            return AppCache.Inventory
-                .Where(item =>
-                    (!string.IsNullOrWhiteSpace(item.ItemName) && item.ItemName.ToLowerInvariant().Contains(normalized)) ||
-                    (!string.IsNullOrWhiteSpace(item.ItemName) && item.ItemName.Replace(" ", string.Empty).ToLowerInvariant().Contains(noSpace)) ||
-                    (!string.IsNullOrWhiteSpace(item.Keywords) && item.Keywords.ToLowerInvariant().Contains(normalized)))
+            return InventorySearch.GetMatches(query, 20)
                 .Select(item => item.ItemName)
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct()
-                .Take(20)
                 .ToList();
         }
 
@@ -226,8 +364,8 @@ namespace WindowsFormsApp1
         }
         private void LoadItemPrice(string itemName)
         {
-            InventoryItem item = AppCache.Inventory.FirstOrDefault(i =>
-                string.Equals(i.ItemName, itemName, StringComparison.OrdinalIgnoreCase));
+            InventoryItem item;
+            AppCache.InventoryByName.TryGetValue((itemName ?? string.Empty).Trim(), out item);
 
             if (item != null)
             {
@@ -241,8 +379,8 @@ namespace WindowsFormsApp1
 
         private void loadItemCost(string itemName)
         {
-            InventoryItem item = AppCache.Inventory.FirstOrDefault(i =>
-                string.Equals(i.ItemName, itemName, StringComparison.OrdinalIgnoreCase));
+            InventoryItem item;
+            AppCache.InventoryByName.TryGetValue((itemName ?? string.Empty).Trim(), out item);
 
             if (item != null && item.Cost.HasValue)
             {
@@ -371,7 +509,7 @@ namespace WindowsFormsApp1
 
 
 
-        private void button2_Click(object sender, EventArgs e)
+        private async void button2_Click(object sender, EventArgs e)
         {
             button2.Enabled = false;
             DialogResult dialogResult = MessageBox.Show("Are you sure you want to checkout this order?", "Confirmation", MessageBoxButtons.YesNo);
@@ -382,7 +520,7 @@ namespace WindowsFormsApp1
                     ReorderBillingTable();
                     LoadBillingData();
                     EnsureCurrentSubmissionId();
- 
+
                     string emp_code = loadEmployeeCode(pendingSalespersonHint);
 
                     // Check if the user clicked OK and entered a name
@@ -405,11 +543,23 @@ namespace WindowsFormsApp1
 
                         string cashierName = emp_code;
 
-                        // Save first so the bill code is available for the receipt
+                        // Snapshot bill data so the background thread never touches UI controls
+                        IList<BillLineRecord> billSnapshot = billItems.Select(x => new BillLineRecord
+                        {
+                            ItemName        = x.ItemName,
+                            Rate            = x.Rate,
+                            Amount          = x.Amount,
+                            DiscountedPrice = x.DiscountedPrice
+                        }).ToList();
+                        string submissionId = currentClientSubmissionId;
+
+                        // Save to DB in background so the UI stays responsive
                         string billCode;
+                        button2.Text = "Processing...";
                         try
                         {
-                            billCode = BillHistoryManager.SaveBill(dataGridBilling, cashierName, totalAmount, discountAmount, currentClientSubmissionId, paymentMethod);
+                            billCode = await Task.Run(() =>
+                                BillHistoryManager.SaveBill(billSnapshot, cashierName, totalAmount, discountAmount, submissionId, paymentMethod));
                         }
                         catch (Exception ex)
                         {
@@ -423,11 +573,16 @@ namespace WindowsFormsApp1
 
                             if (fallbackChoice != DialogResult.Yes)
                             {
+                                button2.Text = "Checkout";
                                 throw;
                             }
 
                             FallbackBillLogger.LogFailedBill(dataGridBilling, cashierName, totalAmount, discountAmount, currentClientSubmissionId);
                             billCode = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+                        }
+                        finally
+                        {
+                            button2.Text = "Checkout";
                         }
 
                         PDFConverter converter = new PDFConverter();
@@ -1058,6 +1213,30 @@ namespace WindowsFormsApp1
                 graphics.DrawString($"Discount Rs. : {discountAmount:N2}", discountFont, Brushes.Black, startX, startY + offsetY);
                 offsetY += (int)fontHeight + 5;
                 graphics.DrawString($"Grand Total Rs. : {(totalAmount - discountAmount):N2}", grandTotalFont, Brushes.Black, startX, startY + offsetY);
+
+                if (discountAmount > 0)
+                {
+                    offsetY += 30;
+
+                    System.Drawing.Rectangle savingsBox = new System.Drawing.Rectangle(startX + 15, startY + offsetY, 235, 48);
+                    Font savingsLabelFont = new Font("Arial", 9, FontStyle.Bold);
+                    Font savingsAmountFont = new Font("Arial", 11, FontStyle.Bold);
+
+                    using (Pen savingsBorderPen = new Pen(Color.Black, 1.5f))
+                    using (StringFormat centeredFormat = new StringFormat())
+                    {
+                        centeredFormat.Alignment = StringAlignment.Center;
+                        centeredFormat.LineAlignment = StringAlignment.Center;
+
+                        graphics.DrawRectangle(savingsBorderPen, savingsBox);
+                        graphics.DrawString("You saved today", savingsLabelFont, Brushes.Black,
+                            new RectangleF(savingsBox.Left, savingsBox.Top + 6, savingsBox.Width, 16), centeredFormat);
+                        graphics.DrawString($"Rs. {discountAmount:N2}", savingsAmountFont, Brushes.Black,
+                            new RectangleF(savingsBox.Left, savingsBox.Top + 24, savingsBox.Width, 18), centeredFormat);
+                    }
+
+                    offsetY += savingsBox.Height;
+                }
 
                 // Add Footnotes
                 offsetY += 40; // Add some space before the footnotes

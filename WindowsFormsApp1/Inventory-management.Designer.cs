@@ -66,8 +66,11 @@
             this.dataGridInventory.Name = "dataGridInventory";
             this.dataGridInventory.RowHeadersWidth = 51;
             this.dataGridInventory.RowTemplate.Height = 24;
-            this.dataGridInventory.Size = new System.Drawing.Size(1016, 924);
+            this.dataGridInventory.Size = new System.Drawing.Size(528, 599);
             this.dataGridInventory.TabIndex = 11;
+            this.dataGridInventory.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.dataGridInventory.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridInventory_CellContentClick);
             // 
             // txtSearch
@@ -75,18 +78,21 @@
             this.txtSearch.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtSearch.Location = new System.Drawing.Point(674, 40);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(725, 34);
+            this.txtSearch.Size = new System.Drawing.Size(465, 34);
             this.txtSearch.TabIndex = 10;
+            this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             // 
             // button1
             // 
             this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(1450, 40);
+            this.button1.Location = new System.Drawing.Point(1060, 40);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(89, 34);
             this.button1.TabIndex = 2;
             this.button1.Text = "Clear";
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // txtItemName
@@ -299,7 +305,8 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1687, 1055);
+            this.AutoScroll = true;
+            this.ClientSize = new System.Drawing.Size(1200, 760);
             this.Controls.Add(this.txtCost);
             this.Controls.Add(this.txtBarcode);
             this.Controls.Add(this.btnDelete);
@@ -324,7 +331,8 @@
             this.Controls.Add(this.button1);
             this.Controls.Add(this.txtSearch);
             this.Controls.Add(this.dataGridInventory);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
+            this.MinimumSize = new System.Drawing.Size(1000, 650);
             this.Name = "Inventory_management";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Stock Management";

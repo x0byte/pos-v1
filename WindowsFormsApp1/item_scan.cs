@@ -36,7 +36,7 @@ namespace WindowsFormsApp1
 
         }
 
-        private async void txtBarcode_KeyDown(object sender, KeyEventArgs e)
+        private void txtBarcode_KeyDown(object sender, KeyEventArgs e)
         {
             if (txtBarcode.Text == "") return;
 
@@ -48,27 +48,17 @@ namespace WindowsFormsApp1
                 lblLoading.Visible = true;
                 lblLoading.Text = "Loading...";
 
-                // Perform cache lookup asynchronously
-                await Task.Run(() =>
+                string barcode = txtBarcode.Text.Trim();
+                InventoryItem item;
+                if (AppCache.InventoryByBarcode.TryGetValue(barcode, out item))
                 {
-                    string barcode = txtBarcode.Text.Trim();
-                    InventoryItem item = AppCache.Inventory.FirstOrDefault(i =>
-                        !string.IsNullOrWhiteSpace(i.Barcode) &&
-                        string.Equals(i.Barcode.Trim(), barcode, StringComparison.OrdinalIgnoreCase));
-
-                    if (item != null)
-                    {
-                        this.Invoke((Action)(() =>
-                        {
-                            lblItemName.Text = item.ItemName;
-                            txtPrice.Text = item.RetailPrice.ToString();
-                            lblItemName.Visible = true;
-                            lblPrice.Visible = true;
-                            txtPrice.Visible = true;
-                            txtAmount.Focus();
-                        }));
-                    }
-                });
+                    lblItemName.Text = item.ItemName;
+                    txtPrice.Text = item.RetailPrice.ToString();
+                    lblItemName.Visible = true;
+                    lblPrice.Visible = true;
+                    txtPrice.Visible = true;
+                    txtAmount.Focus();
+                }
 
                 // Hide the waiting animation
                 lblLoading.Visible = false;

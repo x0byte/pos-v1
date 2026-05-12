@@ -102,5 +102,12 @@ namespace WindowsFormsApp1
             creditHome.Show();
             this.Hide();
         }
+
+        private void BtnPackaging_Click(object sender, EventArgs e)
+        {
+            PackagingLabelWindow packagingWindow = new PackagingLabelWindow();
+            packagingWindow.Show();
+            this.Hide();
+        }
     }
 }

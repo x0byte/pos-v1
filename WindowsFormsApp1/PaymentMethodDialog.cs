@@ -16,6 +16,7 @@ namespace WindowsFormsApp1
 
         // ── Internal state ────────────────────────────────────────────────────────
         private string currentMethod = "CASH";
+        private bool accountsLoaded = false;
         private List<AccountEntry> allAccounts    = new List<AccountEntry>();
         private List<AccountEntry> filteredAccounts = new List<AccountEntry>();
 
@@ -37,7 +38,6 @@ namespace WindowsFormsApp1
         public PaymentMethodDialog(decimal grandTotal = 0)
         {
             BuildUi(grandTotal);
-            LoadAccounts();
             SelectMethod("CASH");
         }
 
@@ -208,6 +208,12 @@ namespace WindowsFormsApp1
 
             bool showCredit = method == "CREDIT";
             creditPanel.Visible = showCredit;
+
+            if (showCredit && !accountsLoaded)
+            {
+                accountsLoaded = true;
+                LoadAccounts();
+            }
 
             int formH = showCredit ? ExpandedHeight : CompactHeight;
             ClientSize = new Size(FormWidth, formH);

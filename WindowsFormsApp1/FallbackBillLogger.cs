@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace WindowsFormsApp1
@@ -14,6 +15,7 @@ namespace WindowsFormsApp1
         private static readonly string CsvPath = Path.Combine(Application.StartupPath, "stc_fallback_bills.csv");
         private static readonly string CsvTempPath = CsvPath + ".tmp";
         private static readonly string CsvBackupPath = CsvPath + ".bak";
+        private static readonly Mutex QueueMutex = new Mutex(false, "STC_POS_FallbackBillLogger_Queue");
         private const int MinColumns = 9;
 
         public static void LogFailedBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount, string clientSubmissionId)
@@ -26,6 +28,9 @@ namespace WindowsFormsApp1
                 DateTime occurredAt = DateTime.Now;
                 string createdByUsername = string.IsNullOrWhiteSpace(UserSession.Username) ? "desktop-pos" : UserSession.Username;
                 List<string> lines = new List<string>();
+                HashSet<string> knownInventoryNames = new HashSet<string>(
+                    AppCache.Inventory.Select(inv => inv.ItemName ?? string.Empty),
+                    StringComparer.Ordinal);
 
                 foreach (DataGridViewRow row in dataGridView.Rows)
                 {
@@ -72,10 +77,7 @@ namespace WindowsFormsApp1
                         "0"
                     }));
 
-                    InventoryItem inventoryItem = AppCache.Inventory.FirstOrDefault(inv =>
-                        string.Equals(inv.ItemName, itemName, StringComparison.Ordinal));
-
-                    if (inventoryItem == null)
+                    if (!knownInventoryNames.Contains(itemName))
                     {
                         lines.Add(ToCsvLine(new[]
                         {
@@ -106,7 +108,19 @@ namespace WindowsFormsApp1
                     }));
                 }
 
-                File.AppendAllLines(CsvPath, lines);
+                if (!TryEnterQueueMutex(5000))
+                {
+                    return;
+                }
+
+                try
+                {
+                    File.AppendAllLines(CsvPath, lines);
+                }
+                finally
+                {
+                    ExitQueueMutex();
+                }
             }
             catch
             {
@@ -118,21 +132,33 @@ namespace WindowsFormsApp1
         {
             try
             {
-                File.AppendAllLines(CsvPath, new[]
+                if (!TryEnterQueueMutex(5000))
                 {
-                    ToCsvLine(new[]
+                    return;
+                }
+
+                try
+                {
+                    File.AppendAllLines(CsvPath, new[]
                     {
-                        "STOCK_MOVEMENT_SKIPPED",
-                        billReference ?? string.Empty,
-                        itemName ?? string.Empty,
-                        reason ?? string.Empty,
-                        string.Empty,
-                        string.Empty,
-                        string.Empty,
-                        string.Empty,
-                        "1"
-                    })
-                });
+                        ToCsvLine(new[]
+                        {
+                            "STOCK_MOVEMENT_SKIPPED",
+                            billReference ?? string.Empty,
+                            itemName ?? string.Empty,
+                            reason ?? string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            string.Empty,
+                            "1"
+                        })
+                    });
+                }
+                finally
+                {
+                    ExitQueueMutex();
+                }
             }
             catch
             {
@@ -149,7 +175,7 @@ namespace WindowsFormsApp1
                     return false;
                 }
 
-                foreach (string line in File.ReadAllLines(CsvPath))
+                foreach (string line in File.ReadLines(CsvPath))
                 {
                     string[] row = ParseCsvLine(line);
                     if (string.Equals(row[0], "BILL", StringComparison.OrdinalIgnoreCase) && row[8] != "1")
@@ -176,8 +202,22 @@ namespace WindowsFormsApp1
                     return false;
                 }
 
-                long lineCount = File.ReadLines(CsvPath).LongCount();
-                return info.Length > 10 * 1024 * 1024 || lineCount > 50000;
+                if (info.Length > 10 * 1024 * 1024)
+                {
+                    return true;
+                }
+
+                long lineCount = 0;
+                foreach (string ignored in File.ReadLines(CsvPath))
+                {
+                    lineCount++;
+                    if (lineCount > 50000)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
             catch
             {
@@ -187,6 +227,11 @@ namespace WindowsFormsApp1
 
         public static int RetryUnsynced()
         {
+            if (!TryEnterQueueMutex(0))
+            {
+                return 0;
+            }
+
             try
             {
                 if (!File.Exists(CsvPath))
@@ -212,6 +257,14 @@ namespace WindowsFormsApp1
 
                 int syncedCount = 0;
                 bool modified = false;
+                Dictionary<string, List<string[]>> rowsByReference = rows
+                    .Where(r => r.Length > 1)
+                    .GroupBy(r => r[1] ?? string.Empty, StringComparer.Ordinal)
+                    .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
+
+                Dictionary<string, int> inventoryByName = AppCache.Inventory
+                    .GroupBy(inv => inv.ItemName ?? string.Empty, StringComparer.Ordinal)
+                    .ToDictionary(group => group.Key, group => group.First().Id, StringComparer.Ordinal);
 
                 List<string[]> unsyncedBills = rows
                     .Where(r => string.Equals(r[0], "BILL", StringComparison.OrdinalIgnoreCase) && r[8] != "1")
@@ -220,16 +273,22 @@ namespace WindowsFormsApp1
                 foreach (string[] billRow in unsyncedBills)
                 {
                     string billRef = billRow[1];
-                    List<string[]> itemRows = rows
-                        .Where(r => string.Equals(r[0], "ITEM", StringComparison.OrdinalIgnoreCase) && r[1] == billRef)
+                    List<string[]> relatedRows;
+                    if (!rowsByReference.TryGetValue(billRef, out relatedRows))
+                    {
+                        relatedRows = new List<string[]>();
+                    }
+
+                    List<string[]> itemRows = relatedRows
+                        .Where(r => string.Equals(r[0], "ITEM", StringComparison.OrdinalIgnoreCase))
                         .ToList();
-                    List<string[]> movementRows = rows
-                        .Where(r => string.Equals(r[0], "MOVEMENT", StringComparison.OrdinalIgnoreCase) && r[1] == billRef)
+                    List<string[]> movementRows = relatedRows
+                        .Where(r => string.Equals(r[0], "MOVEMENT", StringComparison.OrdinalIgnoreCase))
                         .ToList();
 
-                    if (TrySyncBill(billRow, itemRows, movementRows))
+                    if (TrySyncBill(billRow, itemRows, movementRows, inventoryByName))
                     {
-                        foreach (string[] row in rows.Where(r => r[1] == billRef))
+                        foreach (string[] row in relatedRows)
                         {
                             EnsureLength(row, MinColumns);
                             row[8] = "1";
@@ -251,9 +310,13 @@ namespace WindowsFormsApp1
             {
                 return 0;
             }
+            finally
+            {
+                ExitQueueMutex();
+            }
         }
 
-        private static bool TrySyncBill(string[] billRow, List<string[]> itemRows, List<string[]> movementRows)
+        private static bool TrySyncBill(string[] billRow, List<string[]> itemRows, List<string[]> movementRows, Dictionary<string, int> inventoryByName)
         {
             try
             {
@@ -309,57 +372,8 @@ namespace WindowsFormsApp1
                         updateCmd.Parameters.AddWithValue("@bill_id", billId);
                         updateCmd.ExecuteNonQuery();
 
-                        foreach (string[] itemRow in itemRows)
-                        {
-                            string insertItem = @"INSERT INTO bill_history_items
-                            (bill_id, item_name, rate, amount, discounted_price)
-                            VALUES (@bill_id, @item_name, @rate, @amount, @discounted_price)";
-
-                            MySqlCommand itemCmd = new MySqlCommand(insertItem, conn, transaction);
-                            itemCmd.Parameters.AddWithValue("@bill_id", billId);
-                            itemCmd.Parameters.AddWithValue("@item_name", itemRow[2] ?? string.Empty);
-                            itemCmd.Parameters.AddWithValue("@rate", ParseDecimal(itemRow[3]));
-                            itemCmd.Parameters.AddWithValue("@amount", ParseDecimal(itemRow[4]));
-                            itemCmd.Parameters.AddWithValue("@discounted_price", ParseDecimal(itemRow[5]));
-                            itemCmd.ExecuteNonQuery();
-                        }
-
-                        foreach (string[] movementRow in movementRows)
-                        {
-                            InventoryItem cached = AppCache.Inventory.FirstOrDefault(inv =>
-                                string.Equals(inv.ItemName, movementRow[2], StringComparison.Ordinal));
-
-                            int? resolvedItemId = cached?.Id;
-                            if (resolvedItemId == null)
-                            {
-                                using (MySqlCommand lookupCmd = new MySqlCommand(
-                                    "SELECT id FROM inventory WHERE item_name = @name LIMIT 1", conn, transaction))
-                                {
-                                    lookupCmd.Parameters.AddWithValue("@name", movementRow[2] ?? string.Empty);
-                                    object lookupResult = lookupCmd.ExecuteScalar();
-                                    if (lookupResult != null && lookupResult != DBNull.Value)
-                                        resolvedItemId = Convert.ToInt32(lookupResult);
-                                }
-                            }
-
-                            if (resolvedItemId == null) continue;
-
-                            string insertMovement = @"INSERT INTO stock_movement
-                                (item_id, item_name, movement_type, qty_delta, reference_type, reference_id, occurred_at, created_at, created_by_user_id, created_by_username, note)
-                                VALUES
-                                (@item_id, @item_name, @movement_type, @qty_delta, 'bill_history', @reference_id, @occurred_at, NOW(), NULL, @created_by_username, @note)";
-
-                            MySqlCommand movementCmd = new MySqlCommand(insertMovement, conn, transaction);
-                            movementCmd.Parameters.AddWithValue("@item_id", resolvedItemId.Value);
-                            movementCmd.Parameters.AddWithValue("@item_name", movementRow[2] ?? string.Empty);
-                            movementCmd.Parameters.AddWithValue("@movement_type", movementRow[4] ?? "sale");
-                            movementCmd.Parameters.AddWithValue("@qty_delta", ParseDecimal(movementRow[3]));
-                            movementCmd.Parameters.AddWithValue("@reference_id", billId);
-                            movementCmd.Parameters.AddWithValue("@occurred_at", ParseDateTime(movementRow[5]));
-                            movementCmd.Parameters.AddWithValue("@created_by_username", movementRow[6] ?? "desktop-pos");
-                            movementCmd.Parameters.AddWithValue("@note", movementRow[7] ?? string.Empty);
-                            movementCmd.ExecuteNonQuery();
-                        }
+                        InsertBillItems(conn, transaction, billId, itemRows);
+                        InsertStockMovements(conn, transaction, billId, movementRows, inventoryByName);
 
                         transaction.Commit();
                         return true;
@@ -367,6 +381,11 @@ namespace WindowsFormsApp1
                     catch
                     {
                         transaction.Rollback();
+                        if (!string.IsNullOrWhiteSpace(clientSubmissionId) && ExistingSubmissionExists(conn, clientSubmissionId))
+                        {
+                            return true;
+                        }
+
                         return false;
                     }
                 }
@@ -375,6 +394,121 @@ namespace WindowsFormsApp1
             {
                 return false;
             }
+        }
+
+        private static bool ExistingSubmissionExists(MySqlConnection conn, string clientSubmissionId)
+        {
+            string existingBillQuery = "SELECT bill_id FROM bill_history WHERE client_submission_id = @sid LIMIT 1";
+            using (MySqlCommand existingCmd = new MySqlCommand(existingBillQuery, conn))
+            {
+                existingCmd.Parameters.AddWithValue("@sid", clientSubmissionId);
+                object existing = existingCmd.ExecuteScalar();
+                return existing != null && existing != DBNull.Value;
+            }
+        }
+
+        private static void InsertBillItems(MySqlConnection conn, MySqlTransaction transaction, long billId, List<string[]> itemRows)
+        {
+            if (itemRows.Count == 0)
+            {
+                return;
+            }
+
+            StringBuilder sql = new StringBuilder(
+                @"INSERT INTO bill_history_items
+                (bill_id, item_name, rate, amount, discounted_price)
+                VALUES ");
+            MySqlCommand itemCmd = new MySqlCommand(null, conn, transaction);
+
+            for (int i = 0; i < itemRows.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sql.Append(',');
+                }
+
+                string[] itemRow = itemRows[i];
+                sql.Append($"(@bill_id{i}, @item_name{i}, @rate{i}, @amount{i}, @discounted_price{i})");
+                itemCmd.Parameters.AddWithValue($"@bill_id{i}", billId);
+                itemCmd.Parameters.AddWithValue($"@item_name{i}", itemRow[2] ?? string.Empty);
+                itemCmd.Parameters.AddWithValue($"@rate{i}", ParseDecimal(itemRow[3]));
+                itemCmd.Parameters.AddWithValue($"@amount{i}", ParseDecimal(itemRow[4]));
+                itemCmd.Parameters.AddWithValue($"@discounted_price{i}", ParseDecimal(itemRow[5]));
+            }
+
+            itemCmd.CommandText = sql.ToString();
+            itemCmd.ExecuteNonQuery();
+        }
+
+        private static void InsertStockMovements(MySqlConnection conn, MySqlTransaction transaction, long billId, List<string[]> movementRows, Dictionary<string, int> inventoryByName)
+        {
+            if (movementRows.Count == 0)
+            {
+                return;
+            }
+
+            var resolved = new List<(int itemId, string[] row)>();
+            foreach (string[] movementRow in movementRows)
+            {
+                string itemName = movementRow[2] ?? string.Empty;
+                int cachedItemId;
+                int? resolvedItemId = inventoryByName.TryGetValue(itemName, out cachedItemId)
+                    ? cachedItemId
+                    : (int?)null;
+
+                if (resolvedItemId == null)
+                {
+                    using (MySqlCommand lookupCmd = new MySqlCommand(
+                        "SELECT id FROM inventory WHERE item_name = @name LIMIT 1", conn, transaction))
+                    {
+                        lookupCmd.Parameters.AddWithValue("@name", itemName);
+                        object lookupResult = lookupCmd.ExecuteScalar();
+                        if (lookupResult != null && lookupResult != DBNull.Value)
+                        {
+                            resolvedItemId = Convert.ToInt32(lookupResult);
+                            inventoryByName[itemName] = resolvedItemId.Value;
+                        }
+                    }
+                }
+
+                if (resolvedItemId != null)
+                {
+                    resolved.Add((resolvedItemId.Value, movementRow));
+                }
+            }
+
+            if (resolved.Count == 0)
+            {
+                return;
+            }
+
+            StringBuilder sql = new StringBuilder(
+                @"INSERT INTO stock_movement
+                (item_id, item_name, movement_type, qty_delta, reference_type, reference_id, occurred_at, created_at, created_by_user_id, created_by_username, note)
+                VALUES ");
+            MySqlCommand movementCmd = new MySqlCommand(null, conn, transaction);
+
+            for (int i = 0; i < resolved.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sql.Append(',');
+                }
+
+                string[] movementRow = resolved[i].row;
+                sql.Append($"(@item_id{i}, @item_name{i}, @movement_type{i}, @qty_delta{i}, 'bill_history', @reference_id{i}, @occurred_at{i}, NOW(), NULL, @created_by_username{i}, @note{i})");
+                movementCmd.Parameters.AddWithValue($"@item_id{i}", resolved[i].itemId);
+                movementCmd.Parameters.AddWithValue($"@item_name{i}", movementRow[2] ?? string.Empty);
+                movementCmd.Parameters.AddWithValue($"@movement_type{i}", movementRow[4] ?? "sale");
+                movementCmd.Parameters.AddWithValue($"@qty_delta{i}", ParseDecimal(movementRow[3]));
+                movementCmd.Parameters.AddWithValue($"@reference_id{i}", billId);
+                movementCmd.Parameters.AddWithValue($"@occurred_at{i}", ParseDateTime(movementRow[5]));
+                movementCmd.Parameters.AddWithValue($"@created_by_username{i}", movementRow[6] ?? "desktop-pos");
+                movementCmd.Parameters.AddWithValue($"@note{i}", movementRow[7] ?? string.Empty);
+            }
+
+            movementCmd.CommandText = sql.ToString();
+            movementCmd.ExecuteNonQuery();
         }
 
         private static void AtomicRewrite(List<string> lines)
@@ -491,6 +625,30 @@ namespace WindowsFormsApp1
             }
 
             throw new InvalidOperationException("Row length was shorter than expected.");
+        }
+
+        private static bool TryEnterQueueMutex(int millisecondsTimeout)
+        {
+            try
+            {
+                return QueueMutex.WaitOne(millisecondsTimeout);
+            }
+            catch (AbandonedMutexException)
+            {
+                return true;
+            }
+        }
+
+        private static void ExitQueueMutex()
+        {
+            try
+            {
+                QueueMutex.ReleaseMutex();
+            }
+            catch
+            {
+                // Best-effort cleanup only.
+            }
         }
     }
 }

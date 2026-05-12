@@ -42,6 +42,7 @@
             this.btnSettings = new System.Windows.Forms.Button();
             this.btnPendingBills = new System.Windows.Forms.Button();
             this.btnCredit = new System.Windows.Forms.Button();
+            this.btnPackaging = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             this.SuspendLayout();
@@ -192,11 +193,25 @@
             this.btnCredit.UseVisualStyleBackColor = false;
             this.btnCredit.Click += new System.EventHandler(this.BtnCredit_Click);
             //
+            // btnPackaging
+            //
+            this.btnPackaging.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPackaging.BackColor = System.Drawing.Color.SeaGreen;
+            this.btnPackaging.ForeColor = System.Drawing.Color.White;
+            this.btnPackaging.Location = new System.Drawing.Point(545, 636);
+            this.btnPackaging.Name = "btnPackaging";
+            this.btnPackaging.Size = new System.Drawing.Size(190, 56);
+            this.btnPackaging.TabIndex = 13;
+            this.btnPackaging.Text = "Packaging Labels";
+            this.btnPackaging.UseVisualStyleBackColor = false;
+            this.btnPackaging.Click += new System.EventHandler(this.BtnPackaging_Click);
+            //
             // Home
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1106, 729);
+            this.Controls.Add(this.btnPackaging);
             this.Controls.Add(this.btnCredit);
             this.Controls.Add(this.btnPendingBills);
             this.Controls.Add(this.btnSettings);
@@ -237,5 +252,6 @@
         private System.Windows.Forms.Button btnSettings;
         private System.Windows.Forms.Button btnPendingBills;
         private System.Windows.Forms.Button btnCredit;
+        private System.Windows.Forms.Button btnPackaging;
     }
 }

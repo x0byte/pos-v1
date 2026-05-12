@@ -1,14 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.Drawing.Printing;
-using System.IO;
 using System.Text;
-using iText.Kernel.Pdf;
-using iText.Layout;
-using iText.IO.Image;
-using iText.Kernel.Geom;
 using System.Windows.Forms;
 using WindowsFormsApp1;
 
@@ -18,12 +11,19 @@ public class PDFConverter
     {
         // Define the dimensions of the PDF in points (DPI adjusted to 300 DPI)
         float pdfWidthInInches = 2.85f;  // 2.85 inches for width (approximately 285 points)
-        float pdfHeightInInches = 50f;  // Height for standard A4 or adjusted size
         int dpi = 300;  // High DPI for quality
 
         // Convert to pixels for the bitmap size
         int pdfWidthInPixels = (int)(pdfWidthInInches * dpi);
-        int pdfHeightInPixels = (int)(pdfHeightInInches * dpi);
+        int rowCount = 0;
+        foreach (DataGridViewRow row in dataGridView.Rows)
+        {
+            if (!row.IsNewRow)
+            {
+                rowCount++;
+            }
+        }
+        int pdfHeightInPixels = Math.Max(2400, 1750 + (rowCount * 220));
 
         // Create a high-resolution bitmap using the calculated dimensions
         Bitmap bmp = new Bitmap(pdfWidthInPixels, pdfHeightInPixels);
@@ -126,6 +126,58 @@ public class PDFConverter
             Font total_font = new Font("Arial", 11, FontStyle.Bold);
             graphics.DrawString($"Grand Total Rs.: {(totalAmount - discountAmount):N2}", total_font, Brushes.Black, startX + 25, offsetY);
 
+            if (discountAmount > 100)
+            {
+                // Bigger gap after Grand Total
+                offsetY += 70;
+
+                System.Drawing.Rectangle savingsBox = new System.Drawing.Rectangle(
+                    startX + 45,
+                    offsetY,
+                    pdfWidthInPixels - 110,
+                    130
+                );
+
+                using (Font savingsLabelFont = new Font("Nirmala UI", 9, FontStyle.Bold))
+                using (Font savingsAmountFont = new Font("Arial", 10, FontStyle.Bold))
+                using (Pen savingsBorderPen = new Pen(Color.Black, 2))
+                using (StringFormat centeredFormat = new StringFormat())
+                {
+                    centeredFormat.Alignment = StringAlignment.Center;
+                    centeredFormat.LineAlignment = StringAlignment.Near;
+
+                    graphics.DrawRectangle(savingsBorderPen, savingsBox);
+
+                    graphics.DrawString(
+                        "ඔබ අද ඉතිරි කරගත් මුදල:",
+                        savingsLabelFont,
+                        Brushes.Black,
+                        new RectangleF(
+                            savingsBox.Left,
+                            savingsBox.Top + 20,
+                            savingsBox.Width,
+                            55
+                        ),
+                        centeredFormat
+                    );
+
+                    graphics.DrawString(
+                        "Rs. " + discountAmount.ToString("N2"),
+                        savingsAmountFont,
+                        Brushes.Black,
+                        new RectangleF(
+                            savingsBox.Left,
+                            savingsBox.Top + 78,
+                            savingsBox.Width,
+                            40
+                        ),
+                        centeredFormat
+                    );
+                }
+
+                offsetY += savingsBox.Height + 10;
+            }
+
             // Draw footnotes
             offsetY += 90;
             graphics.DrawString("Thank you for shopping with us!", discount_font, Brushes.Black, startX + 105, offsetY);
@@ -160,16 +212,9 @@ public class PDFConverter
             graphics.DrawString(billCode, barcodeTextFont, Brushes.Black, codeX, offsetY);
         }
 
-        // Pass the bitmap to the print window
-        using (MemoryStream memoryStream = new MemoryStream())
-        {
-            bmp.Save(memoryStream, System.Drawing.Imaging.ImageFormat.Png);
-            ImageData imageData = ImageDataFactory.Create(memoryStream.ToArray());
-
-            decimal grand_total = totalAmount - discountAmount;
-            print_window pw = new print_window(bmp, grand_total, cashierName);
-            pw.ShowDialog();
-        }
+        decimal grand_total = totalAmount - discountAmount;
+        print_window pw = new print_window(bmp, grand_total, cashierName);
+        pw.ShowDialog();
     }
 
     // ── Code 39 barcode generator (pure System.Drawing, no dependencies) ─────────

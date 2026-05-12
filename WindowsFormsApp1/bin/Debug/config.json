@@ -1,8 +1,8 @@
 {
-  "Server": "shuttle.proxy.rlwy.net",
-  "Port": "32252",
-  "Database": "railway",
+  "Server": "127.0.0.1",
+  "Port": "3306",
+  "Database": "db_stc",
   "Uid": "root",
-  "Pwd": "PldiHQDkHERFJbiOSRloRPRHbLEThfFj",
+  "Pwd": "",
   "OverridePassword": "stc2026"
 }

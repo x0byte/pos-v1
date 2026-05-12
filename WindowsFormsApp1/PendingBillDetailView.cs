@@ -16,10 +16,14 @@ namespace WindowsFormsApp1
     /// </summary>
     public class PendingBillDetailView : Form
     {
+        private const int BaseWidth = 1000;
+        private const int BaseHeight = 700;
+
         // ── State ─────────────────────────────────────────────────────────────────
         private readonly int pendingBillId;
         private readonly string sessionId;
         private readonly string cashierCode;
+        private readonly string salespersonCode;
         private readonly DateTime createdAt;
         private readonly string note;
         private readonly string cancelledStatus;
@@ -40,11 +44,12 @@ namespace WindowsFormsApp1
         private Label lblGrandTotal;
 
         // ── Constructor ───────────────────────────────────────────────────────────
-        public PendingBillDetailView(int pendingBillId, string sessionId, string cashierCode, DateTime createdAt, string note, string cancelledStatus)
+        public PendingBillDetailView(int pendingBillId, string sessionId, string cashierCode, string salespersonCode, DateTime createdAt, string note, string cancelledStatus)
         {
             this.pendingBillId = pendingBillId;
             this.sessionId = sessionId;
             this.cashierCode = cashierCode;
+            this.salespersonCode = salespersonCode;
             this.createdAt = createdAt;
             this.note = note;
             this.cancelledStatus = cancelledStatus;
@@ -58,9 +63,10 @@ namespace WindowsFormsApp1
         {
             Text = "Pending Bill Details";
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(1000, 700);
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
+            ClientSize = new Size(BaseWidth, BaseHeight);
+            MinimumSize = new Size(860, 620);
+            FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            MaximizeBox = true;
             MinimizeBox = false;
 
             // ── Header row 1: Cashier ─────────────────────────────────────────────
@@ -72,30 +78,40 @@ namespace WindowsFormsApp1
                 SystemColors.ControlText,
                 new Point(22, 38));
 
+            AddLabel("Salesperson", new Font("Microsoft Sans Serif", 10F), SystemColors.GrayText, new Point(285, 15));
+
+            AddLabel(
+                string.IsNullOrWhiteSpace(salespersonCode) ? "(unknown)" : salespersonCode,
+                new Font("Microsoft Sans Serif", 22F, FontStyle.Bold),
+                SystemColors.ControlText,
+                new Point(282, 38));
+
             // ── Header row 2: Created At ──────────────────────────────────────────
-            AddLabel("Created At", new Font("Microsoft Sans Serif", 10F), SystemColors.GrayText, new Point(330, 15));
+            AddLabel("Created At", new Font("Microsoft Sans Serif", 10F), SystemColors.GrayText, new Point(545, 15));
 
             AddLabel(
                 createdAt.ToString("yyyy-MM-dd  hh:mm tt"),
                 new Font("Microsoft Sans Serif", 14F),
                 SystemColors.ControlText,
-                new Point(328, 42));
+                new Point(543, 42));
 
             // ── Header row 3: Note ────────────────────────────────────────────────
-            AddLabel("Note", new Font("Microsoft Sans Serif", 10F), SystemColors.GrayText, new Point(700, 15));
+            AddLabel("Note", new Font("Microsoft Sans Serif", 10F), SystemColors.GrayText, new Point(805, 15));
 
             AddLabel(
                 string.IsNullOrWhiteSpace(note) ? "\u2014" : note,
                 new Font("Microsoft Sans Serif", 14F, FontStyle.Bold),
                 SystemColors.ControlText,
-                new Point(698, 42));
+                new Point(803, 42));
 
             // ── Items grid ────────────────────────────────────────────────────────
             dataGridItems = new DataGridView
             {
                 BorderStyle = BorderStyle.Fixed3D,
                 Location = new Point(25, 95),
-                Size = new Size(940, 400),
+                Size = new Size(ClientSize.Width - 60, 400),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 ReadOnly = true,
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 AllowUserToAddRows = false,
@@ -111,36 +127,42 @@ namespace WindowsFormsApp1
             AddLabel("Total",  new Font("Microsoft Sans Serif", 12F), SystemColors.ControlText, new Point(25, 510));
             AddLabel("Rs.",    new Font("Microsoft Sans Serif", 12F), SystemColors.ControlText, new Point(25, 540));
             lblTotal = new Label { Font = new Font("Microsoft Sans Serif", 16F, FontStyle.Bold), AutoSize = true, Location = new Point(75, 535) };
+            lblTotal.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             Controls.Add(lblTotal);
 
             // Discount
             AddLabel("Discount", new Font("Microsoft Sans Serif", 12F, FontStyle.Bold), SystemColors.ControlText, new Point(310, 510));
             AddLabel("Rs.",      new Font("Microsoft Sans Serif", 12F),                SystemColors.ControlText, new Point(310, 540));
             lblDiscount = new Label { Font = new Font("Microsoft Sans Serif", 14F, FontStyle.Bold), AutoSize = true, Location = new Point(360, 537) };
+            lblDiscount.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             Controls.Add(lblDiscount);
 
             // Grand Total
             AddLabel("Grand Total", new Font("Microsoft Sans Serif", 13.8F, FontStyle.Bold), SystemColors.ControlText, new Point(600, 508));
             AddLabel("Rs.",         new Font("Microsoft Sans Serif", 14F),                   SystemColors.ControlText, new Point(600, 542));
             lblGrandTotal = new Label { Font = new Font("Microsoft Sans Serif", 22F, FontStyle.Bold), AutoSize = true, Location = new Point(655, 533) };
+            lblGrandTotal.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             Controls.Add(lblGrandTotal);
 
             // ── Action buttons ────────────────────────────────────────────────────
             // Print Now  (green — like Reprint in BillDetailView)
             Button btnPrint = MakeButton("Print Now", Color.LimeGreen, Color.Black,
                 new Point(25, 610), new Size(210, 65));
+            btnPrint.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             btnPrint.Click += BtnPrint_Click;
             Controls.Add(btnPrint);
 
             // Move to Billing  (blue)
             Button btnMoveToBilling = MakeButton("Move to Billing", Color.DodgerBlue, Color.White,
                 new Point(248, 610), new Size(210, 65));
+            btnMoveToBilling.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             btnMoveToBilling.Click += BtnMoveToBilling_Click;
             Controls.Add(btnMoveToBilling);
 
             // Cancel Bill  (red)
             Button btnCancel = MakeButton("Cancel Bill", Color.FromArgb(198, 42, 42), Color.White,
                 new Point(471, 610), new Size(210, 65));
+            btnCancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             btnCancel.Click += BtnCancel_Click;
             Controls.Add(btnCancel);
 
@@ -151,10 +173,20 @@ namespace WindowsFormsApp1
                 Font = new Font("Microsoft Sans Serif", 13.8F, FontStyle.Bold),
                 Location = new Point(735, 610),
                 Size = new Size(210, 65),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
                 UseVisualStyleBackColor = true
             };
             btnClose.Click += (s, e) => Close();
             Controls.Add(btnClose);
+
+            foreach (Control control in Controls)
+            {
+                if (control.Location.Y < 508) continue;
+                AnchorStyles horizontalAnchor = control.Location.X >= 600
+                    ? AnchorStyles.Right
+                    : AnchorStyles.Left;
+                control.Anchor = AnchorStyles.Bottom | horizontalAnchor;
+            }
         }
 
         private void AddLabel(string text, Font font, Color foreColor, Point location)
@@ -294,8 +326,8 @@ namespace WindowsFormsApp1
                 return;
             }
 
-            string code = cashierCode;
-            if (string.IsNullOrWhiteSpace(code)) code = PromptForEmployeeCode(cashierCode);
+            string code = salespersonCode;
+            if (string.IsNullOrWhiteSpace(code)) code = PromptForEmployeeCode(salespersonCode);
             if (string.IsNullOrWhiteSpace(code))
             {
                 MessageBox.Show("Please enter the salesperson's name to proceed.",
@@ -304,16 +336,16 @@ namespace WindowsFormsApp1
             }
 
             decimal grandTotalPreview = items.Sum(i => i.Price);
-            PaymentMethodDialog paymentDlg = new PaymentMethodDialog(grandTotalPreview);
-            if (paymentDlg.ShowDialog() != DialogResult.OK)
+            string paymentMethod;
+            int creditAccountId;
+            string creditAccountName;
+            using (PaymentMethodDialog paymentDlg = new PaymentMethodDialog(grandTotalPreview))
             {
-                paymentDlg.Dispose();
-                return;
+                if (paymentDlg.ShowDialog() != DialogResult.OK) return;
+                paymentMethod     = paymentDlg.SelectedPaymentMethod;
+                creditAccountId   = paymentDlg.SelectedCreditAccountId;
+                creditAccountName = paymentDlg.SelectedCreditAccountName;
             }
-            string paymentMethod  = paymentDlg.SelectedPaymentMethod;
-            int creditAccountId   = paymentDlg.SelectedCreditAccountId;
-            string creditAccountName = paymentDlg.SelectedCreditAccountName;
-            paymentDlg.Dispose();
 
             if (_printSubmissionId == null)
                 _printSubmissionId = Guid.NewGuid().ToString();
@@ -330,8 +362,8 @@ namespace WindowsFormsApp1
 
                 DataGridView printGrid = BuildTemporaryGrid();
                 decimal totalAmount    = items.Sum(i => i.Rate * i.Qty);
-                decimal discountAmount = totalAmount - items.Sum(i => i.Price);
-                decimal grandTotal     = totalAmount - discountAmount;
+                decimal grandTotal     = grandTotalPreview;
+                decimal discountAmount = totalAmount - grandTotal;
 
                 string billCode;
                 try
@@ -444,7 +476,7 @@ namespace WindowsFormsApp1
                 billingForm.ClearCurrentBillForPendingLoad();
                 foreach (PendingBillItemRow item in items)
                     billingForm.AddBillItem(item.ItemName, item.Rate, item.Qty, item.Price);
-                billingForm.SetPendingBillContext(cashierCode, GetSnapshotSessionId());
+                billingForm.SetPendingBillContext(salespersonCode, GetSnapshotSessionId());
 
                 RemovePendingBill();
 

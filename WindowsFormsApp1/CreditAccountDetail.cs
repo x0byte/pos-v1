@@ -8,6 +8,10 @@ namespace WindowsFormsApp1
 {
     public class CreditAccountDetail : Form
     {
+        private const int BaseWidth = 1200;
+        private const int BaseHeight = 760;
+        private const int GridTop = 105;
+
         private readonly int accountId;
         private readonly DataGridView dataGridLedger = new DataGridView();
         private readonly Label lblAccountName = new Label();
@@ -23,21 +27,43 @@ namespace WindowsFormsApp1
         private void BuildUi()
         {
             Text = "Credit Account";
+            ClientSize = new Size(BaseWidth, BaseHeight);
+            MinimumSize = new Size(1000, 650);
             StartPosition = FormStartPosition.CenterParent;
             WindowState = FormWindowState.Maximized;
             FormBorderStyle = FormBorderStyle.SizableToolWindow;
 
             lblAccountName.Font = new Font("Microsoft Sans Serif", 18F, FontStyle.Bold);
-            lblAccountName.AutoSize = true;
+            lblAccountName.AutoSize = false;
+            lblAccountName.AutoEllipsis = true;
             lblAccountName.Location = new Point(20, 18);
+            lblAccountName.Size = new Size(540, 36);
+            lblAccountName.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(lblAccountName);
 
             lblBalance.Font = new Font("Microsoft Sans Serif", 13F, FontStyle.Bold);
-            lblBalance.AutoSize = true;
+            lblBalance.AutoSize = false;
+            lblBalance.AutoEllipsis = true;
             lblBalance.Location = new Point(22, 58);
+            lblBalance.Size = new Size(538, 28);
+            lblBalance.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(lblBalance);
 
             // Action buttons (top-right)
+            Button btnBookEntries = new Button
+            {
+                Text = "Book Entries",
+                BackColor = Color.SlateBlue,
+                ForeColor = Color.White,
+                Font = new Font("Microsoft Sans Serif", 11F, FontStyle.Bold),
+                Size = new Size(140, 38),
+                Location = new Point(BaseWidth - 342, 62),
+                UseVisualStyleBackColor = false,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            btnBookEntries.Click += (s, e) => AddBookEntries();
+            Controls.Add(btnBookEntries);
+
             Button btnAddBill = new Button
             {
                 Text = "+ Bill",
@@ -45,7 +71,7 @@ namespace WindowsFormsApp1
                 ForeColor = Color.White,
                 Font = new Font("Microsoft Sans Serif", 11F, FontStyle.Bold),
                 Size = new Size(120, 38),
-                Location = new Point(750, 18),
+                Location = new Point(BaseWidth - 612, 18),
                 UseVisualStyleBackColor = false,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -59,7 +85,7 @@ namespace WindowsFormsApp1
                 ForeColor = Color.White,
                 Font = new Font("Microsoft Sans Serif", 11F, FontStyle.Bold),
                 Size = new Size(130, 38),
-                Location = new Point(880, 18),
+                Location = new Point(BaseWidth - 482, 18),
                 UseVisualStyleBackColor = false,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -73,7 +99,7 @@ namespace WindowsFormsApp1
                 ForeColor = Color.White,
                 Font = new Font("Microsoft Sans Serif", 11F, FontStyle.Bold),
                 Size = new Size(140, 38),
-                Location = new Point(1020, 18),
+                Location = new Point(BaseWidth - 342, 18),
                 UseVisualStyleBackColor = false,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -87,7 +113,7 @@ namespace WindowsFormsApp1
                 ForeColor = Color.White,
                 Font = new Font("Microsoft Sans Serif", 11F, FontStyle.Bold),
                 Size = new Size(130, 38),
-                Location = new Point(1170, 18),
+                Location = new Point(BaseWidth - 192, 18),
                 UseVisualStyleBackColor = false,
                 Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
@@ -95,9 +121,10 @@ namespace WindowsFormsApp1
             Controls.Add(btnViewBill);
 
             // Ledger grid
-            dataGridLedger.Location = new Point(12, 105);
+            dataGridLedger.Location = new Point(12, GridTop);
             dataGridLedger.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            dataGridLedger.Size = new Size(1540, 870);
+            dataGridLedger.Size = new Size(ClientSize.Width - 24, ClientSize.Height - GridTop - 60);
+            dataGridLedger.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridLedger.ReadOnly = true;
             dataGridLedger.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridLedger.AllowUserToAddRows = false;
@@ -113,7 +140,7 @@ namespace WindowsFormsApp1
                 Font = new Font("Microsoft Sans Serif", 10F, FontStyle.Italic),
                 ForeColor = SystemColors.GrayText,
                 AutoSize = true,
-                Location = new Point(12, 1003),
+                Location = new Point(12, ClientSize.Height - 52),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left
             });
 
@@ -122,7 +149,7 @@ namespace WindowsFormsApp1
                 Text = "Developed and Maintained by BlackBox Computers\u2122",
                 Font = new Font("Microsoft Sans Serif", 10.2F),
                 AutoSize = true,
-                Location = new Point(1142, 1003),
+                Location = new Point(ClientSize.Width - 426, ClientSize.Height - 52),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Right
             });
         }
@@ -138,7 +165,11 @@ namespace WindowsFormsApp1
                 string label = header["label"].ToString();
                 lblAccountName.Text = string.IsNullOrWhiteSpace(label) ? name : $"{name}  —  {label}";
 
-                decimal balance = CreditManager.GetAccountBalance(accountId);
+                DataTable dt = CreditManager.GetTransactionsWithBalance(accountId);
+                decimal balance = dt.Rows.Count > 0
+                    ? Convert.ToDecimal(dt.Rows[dt.Rows.Count - 1]["running_balance"])
+                    : 0m;
+
                 if (balance > 0)
                 {
                     lblBalance.Text = $"Outstanding balance:  Rs. {balance:N2}";
@@ -155,7 +186,6 @@ namespace WindowsFormsApp1
                     lblBalance.ForeColor = Color.DimGray;
                 }
 
-                DataTable dt = CreditManager.GetTransactionsWithBalance(accountId);
                 dataGridLedger.DataSource = dt;
                 FormatGrid();
             }
@@ -244,6 +274,24 @@ namespace WindowsFormsApp1
                 catch (Exception ex)
                 {
                     MessageBox.Show("Failed to save transaction: " + ex.Message, "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void AddBookEntries()
+        {
+            using (var dlg = new CreditBookEntryDialog())
+            {
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+                try
+                {
+                    CreditManager.AddTransactions(accountId, dlg.Entries);
+                    LoadData();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Failed to save book entries: " + ex.Message, "Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }

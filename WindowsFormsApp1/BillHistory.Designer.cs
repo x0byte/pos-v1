@@ -135,29 +135,34 @@ namespace WindowsFormsApp1
             this.dataGridHistory.Name = "dataGridHistory";
             this.dataGridHistory.RowHeadersWidth = 51;
             this.dataGridHistory.RowTemplate.Height = 35;
-            this.dataGridHistory.Size = new System.Drawing.Size(1540, 870);
+            this.dataGridHistory.Size = new System.Drawing.Size(1176, 575);
             this.dataGridHistory.TabIndex = 10;
+            this.dataGridHistory.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             // 
             // lblDeveloper
             // 
             this.lblDeveloper.AutoSize = true;
             this.lblDeveloper.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblDeveloper.Location = new System.Drawing.Point(1142, 1003);
+            this.lblDeveloper.Location = new System.Drawing.Point(774, 708);
             this.lblDeveloper.Name = "lblDeveloper";
             this.lblDeveloper.Size = new System.Drawing.Size(401, 20);
             this.lblDeveloper.TabIndex = 12;
             this.lblDeveloper.Text = "Developed and Maintained by BlackBox Computers™";
+            this.lblDeveloper.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             // 
             // lblHint
             // 
             this.lblHint.AutoSize = true;
             this.lblHint.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblHint.ForeColor = System.Drawing.SystemColors.GrayText;
-            this.lblHint.Location = new System.Drawing.Point(12, 1003);
+            this.lblHint.Location = new System.Drawing.Point(12, 708);
             this.lblHint.Name = "lblHint";
             this.lblHint.Size = new System.Drawing.Size(280, 20);
             this.lblHint.TabIndex = 11;
             this.lblHint.Text = "Double-click a bill to view full details";
+            this.lblHint.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             // 
             // pictureBox1
             // 
@@ -174,7 +179,7 @@ namespace WindowsFormsApp1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1568, 1055);
+            this.ClientSize = new System.Drawing.Size(1200, 760);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.lblDeveloper);
             this.Controls.Add(this.lblHint);
@@ -189,6 +194,7 @@ namespace WindowsFormsApp1
             this.Controls.Add(this.lblFrom);
             this.Controls.Add(this.lblTitle);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
+            this.MinimumSize = new System.Drawing.Size(1000, 650);
             this.Name = "BillHistory";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Bill History";

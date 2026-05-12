@@ -10,6 +10,10 @@ namespace WindowsFormsApp1
 {
     public class PendingBillsInbox : Form
     {
+        private const int BaseWidth = 1200;
+        private const int BaseHeight = 760;
+        private const int GridTop = 85;
+
         private readonly string connectionString = DatabaseConfig.ConnectionString;
         private readonly DataGridView dataGridPending = new DataGridView();
 
@@ -33,6 +37,8 @@ namespace WindowsFormsApp1
         private void InitializeUi()
         {
             Text = "Pending Bills";
+            ClientSize = new Size(BaseWidth, BaseHeight);
+            MinimumSize = new Size(1000, 650);
             StartPosition = FormStartPosition.CenterScreen;
             WindowState = FormWindowState.Maximized;
             FormBorderStyle = FormBorderStyle.SizableToolWindow;
@@ -73,7 +79,7 @@ namespace WindowsFormsApp1
                 ForeColor = Color.White,
                 Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Bold),
                 Size = new Size(130, 40),
-                Location = new Point(1420, 20),
+                Location = new Point(BaseWidth - 150, 20),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand,
@@ -84,9 +90,10 @@ namespace WindowsFormsApp1
             Controls.Add(btnRefresh);
 
             // Main grid — same settings as BillHistory's dataGridHistory
-            dataGridPending.Location = new Point(12, 85);
+            dataGridPending.Location = new Point(12, GridTop);
             dataGridPending.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            dataGridPending.Size = new Size(1540, 870);
+            dataGridPending.Size = new Size(ClientSize.Width - 24, ClientSize.Height - GridTop - 60);
+            dataGridPending.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridPending.ReadOnly = true;
             dataGridPending.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridPending.AllowUserToAddRows = false;
@@ -104,7 +111,7 @@ namespace WindowsFormsApp1
                 Font = new Font("Microsoft Sans Serif", 10F, FontStyle.Italic),
                 ForeColor = SystemColors.GrayText,
                 AutoSize = true,
-                Location = new Point(12, 970),
+                Location = new Point(12, ClientSize.Height - 52),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left
             };
             Controls.Add(lblHint);
@@ -115,7 +122,7 @@ namespace WindowsFormsApp1
                 Text = "Developed and Maintained by BlackBox Computers\u2122",
                 Font = new Font("Microsoft Sans Serif", 10.2F),
                 AutoSize = true,
-                Location = new Point(1142, 970),
+                Location = new Point(ClientSize.Width - 426, ClientSize.Height - 52),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Right
             };
             Controls.Add(lblDeveloper);
@@ -132,6 +139,7 @@ namespace WindowsFormsApp1
             int pendingBillId = Convert.ToInt32(row.Cells["id"].Value);
             string sessionId = row.Cells["session_id"]?.Value?.ToString() ?? "";
             string cashierCode = row.Cells["cashier_code"]?.Value?.ToString() ?? "";
+            string salespersonCode = row.Cells["salesperson_code"]?.Value?.ToString() ?? "";
             DateTime createdAt = DateTime.Now;
             if (row.Cells["created_at"]?.Value != null && row.Cells["created_at"].Value != DBNull.Value)
             {
@@ -139,7 +147,7 @@ namespace WindowsFormsApp1
             }
             string note = row.Cells["note"]?.Value?.ToString() ?? "";
 
-            using (PendingBillDetailView detailView = new PendingBillDetailView(pendingBillId, sessionId, cashierCode, createdAt, note, cancelledStatus))
+            using (PendingBillDetailView detailView = new PendingBillDetailView(pendingBillId, sessionId, cashierCode, salespersonCode, createdAt, note, cancelledStatus))
             {
                 detailView.ShowDialog(this);
 
@@ -166,12 +174,12 @@ namespace WindowsFormsApp1
                     connection.Open();
                     string inClause = string.Join(", ", waitingStatuses.Select((_, index) => "@status" + index));
                     string query =
-                        "SELECT pb.id, pb.session_id, pb.cashier_code, pb.created_at, " +
+                        "SELECT pb.id, pb.session_id, pb.cashier_code, pb.salesperson_code, pb.created_at, " +
                         "COALESCE(COUNT(pbi.id), 0) AS items_count, pb.note " +
                         "FROM pending_bill pb " +
                         "LEFT JOIN pending_bill_items pbi ON pbi.pending_bill_id = pb.id " +
                         "WHERE (pb.status IS NULL OR TRIM(CAST(pb.status AS CHAR)) = '' OR LOWER(TRIM(CAST(pb.status AS CHAR))) IN (" + inClause + ")) " +
-                        "GROUP BY pb.id, pb.session_id, pb.cashier_code, pb.created_at, pb.note " +
+                        "GROUP BY pb.id, pb.session_id, pb.cashier_code, pb.salesperson_code, pb.created_at, pb.note " +
                         "ORDER BY pb.created_at DESC";
 
                     using (MySqlCommand command = new MySqlCommand(query, connection))
@@ -205,12 +213,12 @@ namespace WindowsFormsApp1
                 connection.Open();
                 string inClause = string.Join(", ", fallbackVisibleStatuses.Select((_, index) => "@fallbackStatus" + index));
                 string query =
-                    "SELECT pb.id, pb.session_id, pb.cashier_code, pb.created_at, " +
+                    "SELECT pb.id, pb.session_id, pb.cashier_code, pb.salesperson_code, pb.created_at, " +
                     "COALESCE(COUNT(pbi.id), 0) AS items_count, pb.note " +
                     "FROM pending_bill pb " +
                     "LEFT JOIN pending_bill_items pbi ON pbi.pending_bill_id = pb.id " +
                     "WHERE LOWER(TRIM(CAST(pb.status AS CHAR))) IN (" + inClause + ") " +
-                    "GROUP BY pb.id, pb.session_id, pb.cashier_code, pb.created_at, pb.note " +
+                    "GROUP BY pb.id, pb.session_id, pb.cashier_code, pb.salesperson_code, pb.created_at, pb.note " +
                     "ORDER BY pb.created_at DESC";
 
                 using (MySqlCommand command = new MySqlCommand(query, connection))
@@ -236,6 +244,7 @@ namespace WindowsFormsApp1
 
             FormatColumn("session_id", "Session", 140);
             FormatColumn("cashier_code", "Cashier", 180);
+            FormatColumn("salesperson_code", "Salesperson", 180);
             FormatColumn("created_at", "Created At", 220, format: "yyyy-MM-dd  hh:mm tt");
             FormatColumn("items_count", "Items", 90, alignment: DataGridViewContentAlignment.MiddleCenter);
 

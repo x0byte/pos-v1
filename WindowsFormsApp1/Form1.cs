@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.IO;
 using iTextSharp.text.pdf;
 using MySql.Data.MySqlClient;
 
@@ -17,7 +18,19 @@ namespace WindowsFormsApp1
         public Form1()
         {
             DatabaseConfig.Load();
+
+            if (!File.Exists(Path.Combine(Application.StartupPath, "config.json")))
+            {
+                MessageBox.Show(
+                    "No database configuration found.\nPlease configure your database connection to continue.",
+                    "First Time Setup", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                using (AppSettings settings = new AppSettings(fromLogin: true))
+                    settings.ShowDialog();
+                DatabaseConfig.Load();
+            }
+
             AppCache.Load();
+            CreditManager.WarmAccountCacheAsync();
             Task.Run(() =>
             {
                 try

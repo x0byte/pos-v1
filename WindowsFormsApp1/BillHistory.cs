@@ -2,6 +2,7 @@ using MySql.Data.MySqlClient;
 using System;
 using System.Data;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace WindowsFormsApp1
@@ -12,7 +13,7 @@ namespace WindowsFormsApp1
         {
             InitializeComponent();
 
-            dtpFrom.Value = DateTime.Today.AddMonths(-1);
+            dtpFrom.Value = DateTime.Today.AddDays(-2);
             dtpTo.Value = DateTime.Today;
 
             dataGridHistory.ReadOnly = true;
@@ -53,6 +54,10 @@ namespace WindowsFormsApp1
             FormatColumn(dataGridHistory, "salesperson", "Salesperson", 180);
             FormatColumn(dataGridHistory, "item_count", "Items", 90, alignment: DataGridViewContentAlignment.MiddleCenter);
             FormatColumn(dataGridHistory, "payment_method", "Payment", 110, alignment: DataGridViewContentAlignment.MiddleCenter);
+            FormatColumn(dataGridHistory, "status", "Status", 100, alignment: DataGridViewContentAlignment.MiddleCenter);
+            SetColumnHidden(dataGridHistory, "voided_at");
+            SetColumnHidden(dataGridHistory, "voided_by");
+            SetColumnHidden(dataGridHistory, "void_action");
 
             var colGrandTotal = dataGridHistory.Columns["grand_total"];
             if (colGrandTotal != null)
@@ -67,6 +72,16 @@ namespace WindowsFormsApp1
             foreach (DataGridViewColumn col in dataGridHistory.Columns)
             {
                 col.SortMode = DataGridViewColumnSortMode.Automatic;
+            }
+
+            foreach (DataGridViewRow row in dataGridHistory.Rows)
+            {
+                string status = row.Cells["status"]?.Value?.ToString();
+                if (string.Equals(status, "VOIDED", StringComparison.OrdinalIgnoreCase))
+                {
+                    row.DefaultCellStyle.BackColor = Color.MistyRose;
+                    row.DefaultCellStyle.ForeColor = Color.DarkRed;
+                }
             }
         }
 
@@ -94,8 +109,14 @@ namespace WindowsFormsApp1
             var cell = dataGridHistory.Rows[e.RowIndex].Cells["bill_id"];
             if (cell == null || cell.Value == null) return;
             int billId = Convert.ToInt32(cell.Value);
-            BillDetailView detailView = new BillDetailView(billId);
-            detailView.ShowDialog();
+            using (BillDetailView detailView = new BillDetailView(billId))
+            {
+                detailView.ShowDialog();
+                if (detailView.BillWasVoided)
+                {
+                    LoadHistory();
+                }
+            }
         }
 
         private void btnSearch_Click(object sender, EventArgs e)
@@ -116,7 +137,7 @@ namespace WindowsFormsApp1
 
         private void btnClearFilter_Click(object sender, EventArgs e)
         {
-            dtpFrom.Value = DateTime.Today.AddMonths(-1);
+            dtpFrom.Value = DateTime.Today.AddDays(-2);
             dtpTo.Value = DateTime.Today;
             txtSearch.Text = "";
             LoadHistory();
@@ -130,7 +151,7 @@ namespace WindowsFormsApp1
 
         private void pictureBox1_Click(object sender, EventArgs e)
         {
-            Home home = new Home();
+            Home home = Application.OpenForms.OfType<Home>().FirstOrDefault() ?? new Home();
             home.Show();
             this.Hide();
         }

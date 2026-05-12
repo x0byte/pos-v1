@@ -125,9 +125,9 @@
             // 
             this.button1.BackColor = System.Drawing.Color.LimeGreen;
             this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(66, 632);
+            this.button1.Location = new System.Drawing.Point(50, 632);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(479, 86);
+            this.button1.Size = new System.Drawing.Size(450, 86);
             this.button1.TabIndex = 13;
             this.button1.Text = "Add to Bill";
             this.button1.UseVisualStyleBackColor = false;
@@ -136,7 +136,7 @@
             // txtDisWhole
             // 
             this.txtDisWhole.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtDisWhole.Location = new System.Drawing.Point(614, 520);
+            this.txtDisWhole.Location = new System.Drawing.Point(574, 520);
             this.txtDisWhole.Name = "txtDisWhole";
             this.txtDisWhole.Size = new System.Drawing.Size(125, 41);
             this.txtDisWhole.TabIndex = 11;
@@ -145,7 +145,7 @@
             // txtDisEach
             // 
             this.txtDisEach.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtDisEach.Location = new System.Drawing.Point(377, 520);
+            this.txtDisEach.Location = new System.Drawing.Point(337, 520);
             this.txtDisEach.Name = "txtDisEach";
             this.txtDisEach.Size = new System.Drawing.Size(125, 41);
             this.txtDisEach.TabIndex = 7;
@@ -155,7 +155,7 @@
             // 
             this.lblFinalPrice.AutoSize = true;
             this.lblFinalPrice.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblFinalPrice.Location = new System.Drawing.Point(911, 525);
+            this.lblFinalPrice.Location = new System.Drawing.Point(780, 525);
             this.lblFinalPrice.Name = "lblFinalPrice";
             this.lblFinalPrice.Size = new System.Drawing.Size(0, 29);
             this.lblFinalPrice.TabIndex = 14;
@@ -163,7 +163,7 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(885, 535);
+            this.label9.Location = new System.Drawing.Point(745, 535);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(30, 16);
             this.label9.TabIndex = 12;
@@ -173,7 +173,7 @@
             // 
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(609, 471);
+            this.label7.Location = new System.Drawing.Point(569, 471);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(213, 29);
             this.label7.TabIndex = 8;
@@ -183,7 +183,7 @@
             // 
             this.label8.AutoSize = true;
             this.label8.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label8.Location = new System.Drawing.Point(880, 491);
+            this.label8.Location = new System.Drawing.Point(740, 491);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(239, 25);
             this.label8.TabIndex = 9;
@@ -193,7 +193,7 @@
             // 
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(371, 471);
+            this.label6.Location = new System.Drawing.Point(331, 471);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(197, 29);
             this.label6.TabIndex = 10;
@@ -203,9 +203,9 @@
             // 
             this.button2.BackColor = System.Drawing.Color.DodgerBlue;
             this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button2.Location = new System.Drawing.Point(640, 632);
+            this.button2.Location = new System.Drawing.Point(520, 632);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(479, 74);
+            this.button2.Size = new System.Drawing.Size(450, 74);
             this.button2.TabIndex = 15;
             this.button2.Text = "New Item";
             this.button2.UseVisualStyleBackColor = false;
@@ -215,7 +215,8 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1155, 730);
+            this.AutoScroll = true;
+            this.ClientSize = new System.Drawing.Size(1000, 730);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.txtDisWhole);
@@ -233,7 +234,8 @@
             this.Controls.Add(this.lblItemName);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.txtBarcode);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
+            this.MinimumSize = new System.Drawing.Size(900, 650);
             this.Name = "item_scan";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Scan the Item";

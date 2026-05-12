@@ -8,6 +8,10 @@ namespace WindowsFormsApp1
 {
     public class CreditHome : Form
     {
+        private const int BaseWidth = 1200;
+        private const int BaseHeight = 760;
+        private const int GridTop = 125;
+
         private readonly DataGridView dataGridAccounts = new DataGridView();
         private readonly TextBox txtSearch = new TextBox();
 
@@ -20,6 +24,8 @@ namespace WindowsFormsApp1
         private void BuildUi()
         {
             Text = "Credit Accounts";
+            ClientSize = new Size(BaseWidth, BaseHeight);
+            MinimumSize = new Size(1000, 650);
             StartPosition = FormStartPosition.CenterScreen;
             WindowState = FormWindowState.Maximized;
             FormBorderStyle = FormBorderStyle.SizableToolWindow;
@@ -56,12 +62,14 @@ namespace WindowsFormsApp1
                 Text = "Search",
                 Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Bold),
                 AutoSize = true,
-                Location = new Point(510, 82)
+                Location = new Point(BaseWidth - 835, 82),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
             });
 
             txtSearch.Font = new Font("Microsoft Sans Serif", 12F);
-            txtSearch.Location = new Point(590, 78);
-            txtSearch.Size = new Size(300, 30);
+            txtSearch.Location = new Point(BaseWidth - 755, 78);
+            txtSearch.Size = new Size(260, 30);
+            txtSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             Controls.Add(txtSearch);
 
             Button btnSearch = new Button
@@ -71,7 +79,8 @@ namespace WindowsFormsApp1
                 ForeColor = Color.White,
                 Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Bold),
                 Size = new Size(130, 40),
-                Location = new Point(910, 72),
+                Location = new Point(BaseWidth - 475, 72),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 UseVisualStyleBackColor = false
             };
             btnSearch.Click += (s, e) => LoadAccounts(txtSearch.Text.Trim());
@@ -84,7 +93,8 @@ namespace WindowsFormsApp1
                 ForeColor = Color.White,
                 Font = new Font("Microsoft Sans Serif", 12F),
                 Size = new Size(110, 40),
-                Location = new Point(1060, 72),
+                Location = new Point(BaseWidth - 325, 72),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 UseVisualStyleBackColor = false
             };
             btnClear.Click += (s, e) => { txtSearch.Text = ""; LoadAccounts(); };
@@ -97,16 +107,18 @@ namespace WindowsFormsApp1
                 ForeColor = Color.White,
                 Font = new Font("Microsoft Sans Serif", 12F, FontStyle.Bold),
                 Size = new Size(180, 40),
-                Location = new Point(1360, 72),
+                Location = new Point(BaseWidth - 192, 72),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 UseVisualStyleBackColor = false
             };
             btnNew.Click += BtnNew_Click;
             Controls.Add(btnNew);
 
             // Main grid
-            dataGridAccounts.Location = new Point(12, 125);
+            dataGridAccounts.Location = new Point(12, GridTop);
             dataGridAccounts.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            dataGridAccounts.Size = new Size(1540, 870);
+            dataGridAccounts.Size = new Size(ClientSize.Width - 24, ClientSize.Height - GridTop - 60);
+            dataGridAccounts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridAccounts.ReadOnly = true;
             dataGridAccounts.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dataGridAccounts.AllowUserToAddRows = false;
@@ -123,7 +135,7 @@ namespace WindowsFormsApp1
                 Font = new Font("Microsoft Sans Serif", 10F, FontStyle.Italic),
                 ForeColor = SystemColors.GrayText,
                 AutoSize = true,
-                Location = new Point(12, 1003),
+                Location = new Point(12, ClientSize.Height - 52),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left
             });
 
@@ -132,7 +144,7 @@ namespace WindowsFormsApp1
                 Text = "Developed and Maintained by BlackBox Computers\u2122",
                 Font = new Font("Microsoft Sans Serif", 10.2F),
                 AutoSize = true,
-                Location = new Point(1142, 1003),
+                Location = new Point(ClientSize.Width - 426, ClientSize.Height - 52),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Right
             });
         }

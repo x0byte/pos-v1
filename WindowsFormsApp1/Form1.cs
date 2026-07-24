@@ -61,6 +61,7 @@ namespace WindowsFormsApp1
             {
                 UserSession.IsAdmin = isAdmin;
                 UserSession.Username = txtName.Text?.Trim();
+                UserSession.IsCashierSessionActive = !isAdmin;
                 Home home = new Home(isAdmin);
                 home.Show();
                 this.Hide();

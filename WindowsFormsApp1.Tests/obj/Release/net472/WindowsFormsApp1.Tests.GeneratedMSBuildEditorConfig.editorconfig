@@ -1,0 +1,8 @@
+is_global = true
+build_property.RootNamespace = WindowsFormsApp1.Tests
+build_property.ProjectDir = C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
+build_property.CsWinRTUseWindowsUIXamlProjections = false
+build_property.EffectiveAnalysisLevelStyle = 
+build_property.EnableCodeStyleSeverity = 

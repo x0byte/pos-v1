@@ -1,0 +1,11 @@
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\bin\Release\net472\WindowsFormsApp1.Tests.exe.config
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\bin\Release\net472\WindowsFormsApp1.Tests.exe
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\bin\Release\net472\WindowsFormsApp1.Tests.pdb
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\obj\Release\net472\WindowsFormsApp1.Tests.csproj.AssemblyReference.cache
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\obj\Release\net472\WindowsFormsApp1.Tests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\obj\Release\net472\WindowsFormsApp1.Tests.AssemblyInfoInputs.cache
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\obj\Release\net472\WindowsFormsApp1.Tests.AssemblyInfo.cs
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\obj\Release\net472\WindowsFormsApp1.Tests.csproj.CoreCompileInputs.cache
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\obj\Release\net472\WindowsFormsApp1.Tests.sourcelink.json
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\obj\Release\net472\WindowsFormsApp1.Tests.exe
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1.Tests\obj\Release\net472\WindowsFormsApp1.Tests.pdb

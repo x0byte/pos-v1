@@ -1,0 +1,3 @@
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\publish\WindowsFormsApp1.Tests.exe
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\publish\WindowsFormsApp1.Tests.exe.config
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\publish\WindowsFormsApp1.Tests.pdb

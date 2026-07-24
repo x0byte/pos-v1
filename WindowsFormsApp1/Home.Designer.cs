@@ -43,6 +43,7 @@
             this.btnPendingBills = new System.Windows.Forms.Button();
             this.btnCredit = new System.Windows.Forms.Button();
             this.btnPackaging = new System.Windows.Forms.Button();
+            this.btnUpdates = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox2)).BeginInit();
             this.SuspendLayout();
@@ -87,7 +88,7 @@
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(347, 687);
+            this.label3.Location = new System.Drawing.Point(343, 695);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(401, 20);
             this.label3.TabIndex = 5;
@@ -95,10 +96,10 @@
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Image = global::WindowsFormsApp1.Properties.Resources.logo;
-            this.pictureBox1.Location = new System.Drawing.Point(289, 59);
+            this.pictureBox1.Image = global::WindowsFormsApp1.Properties.Resources.stc_black_1;
+            this.pictureBox1.Location = new System.Drawing.Point(360, 12);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(504, 73);
+            this.pictureBox1.Size = new System.Drawing.Size(355, 134);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 6;
             this.pictureBox1.TabStop = false;
@@ -155,9 +156,9 @@
             this.label5.TabIndex = 9;
             this.label5.Text = "User Logout";
             this.label5.Click += new System.EventHandler(this.label5_Click);
-            //
+            // 
             // btnSettings
-            //
+            // 
             this.btnSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSettings.Location = new System.Drawing.Point(35, 636);
             this.btnSettings.Name = "btnSettings";
@@ -167,9 +168,9 @@
             this.btnSettings.UseVisualStyleBackColor = true;
             this.btnSettings.Visible = false;
             this.btnSettings.Click += new System.EventHandler(this.btnSettings_Click);
-            //
+            // 
             // btnPendingBills
-            //
+            // 
             this.btnPendingBills.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnPendingBills.Location = new System.Drawing.Point(175, 636);
             this.btnPendingBills.Name = "btnPendingBills";
@@ -179,11 +180,11 @@
             this.btnPendingBills.UseVisualStyleBackColor = true;
             this.btnPendingBills.Visible = false;
             this.btnPendingBills.Click += new System.EventHandler(this.BtnPendingBills_Click);
-            //
+            // 
             // btnCredit
-            //
-            this.btnCredit.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            // 
             this.btnCredit.BackColor = System.Drawing.Color.SteelBlue;
+            this.btnCredit.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnCredit.ForeColor = System.Drawing.Color.White;
             this.btnCredit.Location = new System.Drawing.Point(360, 636);
             this.btnCredit.Name = "btnCredit";
@@ -192,11 +193,11 @@
             this.btnCredit.Text = "Credit Accounts";
             this.btnCredit.UseVisualStyleBackColor = false;
             this.btnCredit.Click += new System.EventHandler(this.BtnCredit_Click);
-            //
+            // 
             // btnPackaging
-            //
-            this.btnPackaging.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            // 
             this.btnPackaging.BackColor = System.Drawing.Color.SeaGreen;
+            this.btnPackaging.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnPackaging.ForeColor = System.Drawing.Color.White;
             this.btnPackaging.Location = new System.Drawing.Point(545, 636);
             this.btnPackaging.Name = "btnPackaging";
@@ -205,12 +206,27 @@
             this.btnPackaging.Text = "Packaging Labels";
             this.btnPackaging.UseVisualStyleBackColor = false;
             this.btnPackaging.Click += new System.EventHandler(this.BtnPackaging_Click);
-            //
+            // 
+            // btnUpdates
+            // 
+            this.btnUpdates.BackColor = System.Drawing.Color.DarkSlateGray;
+            this.btnUpdates.Font = new System.Drawing.Font("Microsoft Sans Serif", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnUpdates.ForeColor = System.Drawing.Color.White;
+            this.btnUpdates.Location = new System.Drawing.Point(750, 636);
+            this.btnUpdates.Name = "btnUpdates";
+            this.btnUpdates.Size = new System.Drawing.Size(170, 56);
+            this.btnUpdates.TabIndex = 14;
+            this.btnUpdates.Text = "Updates";
+            this.btnUpdates.UseVisualStyleBackColor = false;
+            this.btnUpdates.Visible = false;
+            this.btnUpdates.Click += new System.EventHandler(this.BtnUpdates_Click);
+            // 
             // Home
-            //
+            // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1106, 729);
+            this.Controls.Add(this.btnUpdates);
             this.Controls.Add(this.btnPackaging);
             this.Controls.Add(this.btnCredit);
             this.Controls.Add(this.btnPendingBills);
@@ -253,5 +269,6 @@
         private System.Windows.Forms.Button btnPendingBills;
         private System.Windows.Forms.Button btnCredit;
         private System.Windows.Forms.Button btnPackaging;
+        private System.Windows.Forms.Button btnUpdates;
     }
 }

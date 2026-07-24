@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\WindowsFormsApp1\IUpdateSafetyService.cs" Link="App\IUpdateSafetyService.cs" />
+    <Compile Include="..\WindowsFormsApp1\IUpdateSafetyStateProvider.cs" Link="App\IUpdateSafetyStateProvider.cs" />
+    <Compile Include="..\WindowsFormsApp1\UpdateSafetyResult.cs" Link="App\UpdateSafetyResult.cs" />
+    <Compile Include="..\WindowsFormsApp1\UpdateSafetyService.cs" Link="App\UpdateSafetyService.cs" />
+  </ItemGroup>
+</Project>

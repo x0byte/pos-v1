@@ -72,7 +72,7 @@
             this.label2.Click += new System.EventHandler(this.label1_Click);
             // 
             // btnLogin
-            //
+            // 
             this.btnLogin.Font = new System.Drawing.Font("Microsoft Sans Serif", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnLogin.Location = new System.Drawing.Point(289, 422);
             this.btnLogin.Name = "btnLogin";
@@ -81,9 +81,10 @@
             this.btnLogin.Text = "Login";
             this.btnLogin.UseVisualStyleBackColor = true;
             this.btnLogin.Click += new System.EventHandler(this.button1_Click);
-            //
+            // 
             // btnDbSettings
-            //
+            // 
+            this.btnDbSettings.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.btnDbSettings.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDbSettings.Location = new System.Drawing.Point(612, 570);
             this.btnDbSettings.Name = "btnDbSettings";
@@ -113,10 +114,10 @@
             // 
             // pictureBox1
             // 
-            this.pictureBox1.Image = global::WindowsFormsApp1.Properties.Resources.logo;
-            this.pictureBox1.Location = new System.Drawing.Point(127, 54);
+            this.pictureBox1.Image = global::WindowsFormsApp1.Properties.Resources.stc_black_1;
+            this.pictureBox1.Location = new System.Drawing.Point(197, 34);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(504, 73);
+            this.pictureBox1.Size = new System.Drawing.Size(364, 122);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 3;
             this.pictureBox1.TabStop = false;

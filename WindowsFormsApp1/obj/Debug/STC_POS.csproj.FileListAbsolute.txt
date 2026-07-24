@@ -394,3 +394,8 @@ C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsA
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\CodexVerify\zh-CHS\Microsoft.ReportViewer.WinForms.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\CodexVerify\zh-CHT\Microsoft.ReportViewer.WinForms.resources.dll
 C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\obj\Debug\WindowsFormsApp1.exe.config
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\NuGet.Versioning.dll
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\Velopack.dll
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\NuGet.Versioning.xml
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\bin\Debug\Velopack.xml
+C:\Users\MSI\Desktop\pos-v1-beta-experiment\pos-v1-beta-experiment\WindowsFormsApp1\obj\Debug\STC_POS.csproj.SuggestedBindingRedirects.cache

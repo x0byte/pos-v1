@@ -184,9 +184,6 @@ public class PDFConverter
             offsetY += (int)fontHeight + 5;
             graphics.DrawString("Returns accepted within 7 days with receipt.", font, Brushes.Black, startX + 85, offsetY);
 
-            offsetY += 100;
-            graphics.DrawString("POS System by BlackBox Technologies", font, Brushes.Black, startX + 105, offsetY);
-
             // ── Barcode at the bottom ──────────────────────────────────────────────
             offsetY += 40;
 
@@ -210,6 +207,24 @@ public class PDFConverter
             SizeF codeSize = graphics.MeasureString(billCode, barcodeTextFont);
             float codeX = startX + 10 + (usableWidth - codeSize.Width) / 2f;
             graphics.DrawString(billCode, barcodeTextFont, Brushes.Black, codeX, offsetY);
+
+            offsetY += 80;
+
+            // Center "Powered by VOLT Business Solutions"
+            string poweredByText = "Powered by VOLT Business Solutions";
+            SizeF poweredBySize = graphics.MeasureString(poweredByText, font);
+            // Note: If you need the +10 buffer like the barcode, add it here. Otherwise, standard centering is below:
+            float poweredByX = startX + (usableWidth - poweredBySize.Width) / 2f;
+            graphics.DrawString(poweredByText, font, Brushes.Black, poweredByX, offsetY);
+
+            offsetY += (int)fontHeight + 5;
+
+            // Center the mobile number
+            string phoneText = "071 8086 418 | info@vbs.lk";
+            SizeF phoneSize = graphics.MeasureString(phoneText, font);
+            float phoneX = startX + (usableWidth - phoneSize.Width) / 2f;
+            graphics.DrawString(phoneText, font, Brushes.Black, phoneX, offsetY);
+
         }
 
         decimal grand_total = totalAmount - discountAmount;

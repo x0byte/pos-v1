@@ -24,7 +24,62 @@ namespace WindowsFormsApp1
         {
             this.isAdmin = isAdmin;
             InitializeComponent();
+            AddOperationalButtons();
             ApplyScreenScale();
+        }
+
+        private void AddOperationalButtons()
+        {
+            Button btnReturns = new Button
+            {
+                Name = "btnReturns",
+                Text = "Returns",
+                BackColor = Color.IndianRed,
+                ForeColor = Color.White,
+                Font = new Font("Microsoft Sans Serif", 10.2F, FontStyle.Bold),
+                Location = new Point(750, 572),
+                Size = new Size(170, 48),
+                UseVisualStyleBackColor = false
+            };
+            btnReturns.Click += (sender, e) =>
+            {
+                using (ReturnProcessingForm returns = new ReturnProcessingForm())
+                {
+                    returns.ShowDialog(this);
+                }
+            };
+
+            Button btnReturnHistory = new Button
+            {
+                Name = "btnReturnHistory",
+                Text = "Return History",
+                BackColor = Color.Sienna,
+                ForeColor = Color.White,
+                Font = new Font("Microsoft Sans Serif", 9.5F, FontStyle.Bold),
+                Location = new Point(35, 572),
+                Size = new Size(170, 48),
+                UseVisualStyleBackColor = false,
+                Visible = isAdmin
+            };
+            btnReturnHistory.Click += (sender, e) => new ReturnHistoryForm().ShowDialog(this);
+
+            Button btnReconcile = new Button
+            {
+                Name = "btnReconcile",
+                Text = "Reconcile",
+                BackColor = Color.DarkOliveGreen,
+                ForeColor = Color.White,
+                Font = new Font("Microsoft Sans Serif", 9.5F, FontStyle.Bold),
+                Location = new Point(220, 572),
+                Size = new Size(140, 48),
+                UseVisualStyleBackColor = false,
+                Visible = isAdmin
+            };
+            btnReconcile.Click += (sender, e) => new InventoryReconciliationForm().ShowDialog(this);
+
+            Controls.Add(btnReturns);
+            Controls.Add(btnReturnHistory);
+            Controls.Add(btnReconcile);
         }
 
         private void ApplyScreenScale()

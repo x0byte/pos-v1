@@ -151,22 +151,42 @@ namespace WindowsFormsApp1
 
         private void button2_Click(object sender, EventArgs e)
         {
+            decimal price, amount, cost = 0m;
+            if (!PosNumberParser.TryParseMoney(txtPrice.Text, out price) ||
+                !PosNumberParser.TryParseQuantity(txtAmount.Text, out amount, allowZero: true) ||
+                (!string.IsNullOrWhiteSpace(txtCost.Text) && !PosNumberParser.TryParseMoney(txtCost.Text, out cost)))
+            {
+                MessageBox.Show("Enter valid price, stock amount, and cost values.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             using (MySqlConnection connection = new MySqlConnection(connectionString))
             {
                 try
                 {
                     connection.Open();
-                    string query = "INSERT INTO inventory (item_name, retail_price, amount, added_by, keywords, barcode, cost) VALUES (@name, @price, @amount, @added_by, @keywords, @barcode, @cost)";
-                    using (MySqlCommand command = new MySqlCommand(query, connection))
+                    using (MySqlTransaction tx = connection.BeginTransaction())
                     {
-                        command.Parameters.AddWithValue("@name", txtItemName.Text);
-                        command.Parameters.AddWithValue("@price", txtPrice.Text);
-                        command.Parameters.AddWithValue("@amount", txtAmount.Text);
-                        command.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
-                        command.Parameters.AddWithValue("@keywords", KeywordGenerator.MergeWithGenerated(txtKeywords.Text, txtItemName.Text));
-                        command.Parameters.AddWithValue("@barcode", txtBarcode.Text);
-                        command.Parameters.AddWithValue("@cost", txtCost.Text);
-                        command.ExecuteNonQuery();
+                        string query = "INSERT INTO inventory (item_name, retail_price, amount, added_by, keywords, barcode, cost, stock_update_time) VALUES (@name, @price, @amount, @added_by, @keywords, @barcode, @cost, NOW())";
+                        using (MySqlCommand command = new MySqlCommand(query, connection, tx))
+                        {
+                            command.Parameters.AddWithValue("@name", txtItemName.Text);
+                            command.Parameters.AddWithValue("@price", price);
+                            command.Parameters.AddWithValue("@amount", amount);
+                            command.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
+                            command.Parameters.AddWithValue("@keywords", KeywordGenerator.MergeWithGenerated(txtKeywords.Text, txtItemName.Text));
+                            command.Parameters.AddWithValue("@barcode", txtBarcode.Text);
+                            command.Parameters.AddWithValue("@cost", string.IsNullOrWhiteSpace(txtCost.Text) ? (object)DBNull.Value : cost);
+                            command.ExecuteNonQuery();
+
+                            if (amount != 0m)
+                            {
+                                InsertInventoryMovement(connection, tx, Convert.ToInt32(command.LastInsertedId), txtItemName.Text, amount,
+                                    amount > 0m ? InventoryMutationRules.PurchaseReceipt : InventoryMutationRules.ManualAdjustmentOut, "Initial inventory quantity");
+                            }
+                        }
+
+                        tx.Commit();
                         MessageBox.Show("Successfully Added!", " New Item", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                 }
@@ -212,6 +232,7 @@ namespace WindowsFormsApp1
                         {
                             int itemId = Convert.ToInt32(dataGridInventory.SelectedRows[0].Cells["id"].Value);
                             decimal? oldCost = null;
+                            decimal oldAmount = 0m;
                             using (MySqlCommand oldCostCmd = new MySqlCommand("SELECT cost FROM inventory WHERE id = @id", conn, tx))
                             {
                                 oldCostCmd.Parameters.AddWithValue("@id", itemId);
@@ -221,8 +242,18 @@ namespace WindowsFormsApp1
                                     oldCost = Convert.ToDecimal(oldCostObj);
                                 }
                             }
+                            using (MySqlCommand oldAmountCmd = new MySqlCommand("SELECT amount FROM inventory WHERE id = @id FOR UPDATE", conn, tx))
+                            {
+                                oldAmountCmd.Parameters.AddWithValue("@id", itemId);
+                                object oldAmountObj = oldAmountCmd.ExecuteScalar();
+                                if (oldAmountObj != null && oldAmountObj != DBNull.Value)
+                                {
+                                    oldAmount = Convert.ToDecimal(oldAmountObj);
+                                }
+                            }
 
-                            decimal? newCost = string.IsNullOrWhiteSpace(txtCost.Text) ? (decimal?)null : decimal.Parse(txtCost.Text);
+                            decimal? newCost = string.IsNullOrWhiteSpace(txtCost.Text) ? (decimal?)null : PosNumberParser.ParseRequiredMoney(txtCost.Text, "Cost");
+                            decimal newAmount = PosNumberParser.ParseRequiredQuantity(txtAmount.Text, "Stock amount", allowZero: true);
                             decimal? changePct = null;
                             bool warningFlagged = false;
                             if (oldCost.HasValue && oldCost.Value != 0m && newCost.HasValue)
@@ -248,8 +279,8 @@ namespace WindowsFormsApp1
                             string sql = "UPDATE `inventory` SET `item_name`=@item_name,`retail_price`=@price,`amount`=@amount,`added_by`=@added_by,`keywords`=@keywords, `barcode`=@barcode, `cost`=@cost  WHERE id = @id";
                             MySqlCommand cmd = new MySqlCommand(sql, conn, tx);
                             cmd.Parameters.AddWithValue("@item_name", txtItemName.Text);
-                            cmd.Parameters.AddWithValue("@amount", txtAmount.Text);
-                            cmd.Parameters.AddWithValue("@price", txtPrice.Text);
+                            cmd.Parameters.AddWithValue("@amount", newAmount);
+                            cmd.Parameters.AddWithValue("@price", PosNumberParser.ParseRequiredMoney(txtPrice.Text, "Retail price"));
                             cmd.Parameters.AddWithValue("@added_by", txtAddedBy.Text);
                             cmd.Parameters.AddWithValue("@keywords", KeywordGenerator.MergeWithGenerated(txtKeywords.Text, txtItemName.Text));
                             cmd.Parameters.AddWithValue("@barcode", txtBarcode.Text);
@@ -276,6 +307,12 @@ namespace WindowsFormsApp1
                             }
 
                             cmd.ExecuteNonQuery();
+                            decimal delta = newAmount - oldAmount;
+                            if (delta != 0m)
+                            {
+                                InsertInventoryMovement(conn, tx, itemId, txtItemName.Text, delta,
+                                    InventoryMutationRules.ManualAdjustmentType(delta), "Desktop inventory edit");
+                            }
                             tx.Commit();
                         }
 
@@ -315,6 +352,27 @@ namespace WindowsFormsApp1
             }
             LoadInventoryData(true);
             clearTexts();
+        }
+
+        private static void InsertInventoryMovement(MySqlConnection conn, MySqlTransaction tx, int itemId, string itemName, decimal qtyDelta, string movementType, string note)
+        {
+            using (MySqlCommand cmd = new MySqlCommand(
+                @"INSERT INTO stock_movement
+                  (item_id, item_name, movement_type, qty_delta, reference_type, reference_id,
+                   occurred_at, created_at, created_by_user_id, created_by_username, note)
+                  VALUES
+                  (@item_id, @item_name, @movement_type, @qty_delta, 'inventory_adjustment', @reference_id,
+                   NOW(), NOW(), NULL, @created_by_username, @note)", conn, tx))
+            {
+                cmd.Parameters.AddWithValue("@item_id", itemId);
+                cmd.Parameters.AddWithValue("@item_name", itemName ?? string.Empty);
+                cmd.Parameters.AddWithValue("@movement_type", movementType);
+                cmd.Parameters.AddWithValue("@qty_delta", qtyDelta);
+                cmd.Parameters.AddWithValue("@reference_id", itemId);
+                cmd.Parameters.AddWithValue("@created_by_username", UserSession.Username ?? "desktop-pos");
+                cmd.Parameters.AddWithValue("@note", note ?? string.Empty);
+                cmd.ExecuteNonQuery();
+            }
         }
     }
 }

@@ -7,7 +7,7 @@ namespace WindowsFormsApp1
     public static class UpdateLogger
     {
         private static readonly object SyncRoot = new object();
-        private static readonly string LogPath = Path.Combine(Application.StartupPath, "updates.log");
+        private static readonly string LogPath = RuntimePathProvider.GetDataFilePath("updates.log");
 
         public static void Info(string message)
         {

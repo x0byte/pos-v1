@@ -28,15 +28,13 @@ namespace WindowsFormsApp1
         private readonly List<BillItem> billItems = new List<BillItem>();
         private static readonly Dictionary<string, PausedCartRecord> pausedBillItems = new Dictionary<string, PausedCartRecord>(StringComparer.OrdinalIgnoreCase);
         private static bool pausedCartsLoaded;
-        private static readonly string PausedCartsPath = System.IO.Path.Combine(Application.StartupPath, "paused_carts.json");
+        private static readonly string PausedCartsPath = RuntimePathProvider.GetDataFilePath("paused_carts.json");
         private int nextRowId = 1;
         private DateTime billCreatedAt = DateTime.Now;
         private string currentClientSubmissionId;
         private string pendingSalespersonHint;
         private string pendingSnapshotSessionId;
         private bool promptedForPausedCartRestore;
-        private readonly ListBox suggestionListBox;
-        private readonly System.Windows.Forms.TextBox textBox;
         private Label lblStockSync;
         private System.Windows.Forms.Timer syncTimer;
 
@@ -477,10 +475,11 @@ namespace WindowsFormsApp1
             txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
             txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
 
-            decimal retailPrice = decimal.Parse(txtRetailPrice.Text);
-            decimal amount = decimal.Parse(txtAmount.Text);
-            decimal each_discount = decimal.Parse(txtDisEach.Text);
-            decimal whole_discount = decimal.Parse(txtDisWhole.Text);
+            decimal retailPrice, amount, each_discount, whole_discount;
+            if (!TryReadBillingInput(out retailPrice, out amount, out each_discount, out whole_discount))
+            {
+                return;
+            }
 
             decimal finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
             lblFinalPrice.Text = finalPrice.ToString();
@@ -527,7 +526,13 @@ namespace WindowsFormsApp1
                     if (!string.IsNullOrEmpty(emp_code))
                     {
                         decimal totalAmount = CalculateGrandTotalFromMemory();
-                        decimal discountAmount = totalAmount - decimal.Parse(lblTotalPrice.Text);
+                        decimal totalAfterDiscount;
+                        if (!PosNumberParser.TryParseMoney(lblTotalPrice.Text, out totalAfterDiscount))
+                        {
+                            MessageBox.Show("The bill total is not valid. Please review the bill before checkout.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+                        decimal discountAmount = totalAmount - totalAfterDiscount;
                         decimal grandTotal = totalAmount - discountAmount;
 
                         PaymentMethodDialog paymentDlg = new PaymentMethodDialog(grandTotal);
@@ -559,7 +564,7 @@ namespace WindowsFormsApp1
                         try
                         {
                             billCode = await Task.Run(() =>
-                                BillHistoryManager.SaveBill(billSnapshot, cashierName, totalAmount, discountAmount, submissionId, paymentMethod));
+                                BillHistoryManager.SaveBill(billSnapshot, cashierName, totalAmount, discountAmount, submissionId, paymentMethod, creditAccountId));
                         }
                         catch (Exception ex)
                         {
@@ -577,8 +582,7 @@ namespace WindowsFormsApp1
                                 throw;
                             }
 
-                            FallbackBillLogger.LogFailedBill(dataGridBilling, cashierName, totalAmount, discountAmount, currentClientSubmissionId);
-                            billCode = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+                            billCode = FallbackBillLogger.LogFailedBill(dataGridBilling, cashierName, totalAmount, discountAmount, currentClientSubmissionId, paymentMethod, creditAccountId);
                         }
                         finally
                         {
@@ -594,30 +598,11 @@ namespace WindowsFormsApp1
                             {
                                 MessageBox.Show(
                                     "This credit bill was queued offline with a LOCAL bill code.\n\n"
-                                    + "The bill can be synced later by the fallback mechanism, but the credit ledger was not updated automatically.\n\n"
-                                    + $"Write this down for manual credit entry:\nBill: {billCode}\nAccount: {creditAccountName}\nAmount: Rs. {grandTotal:N2}",
-                                    "Manual Credit Entry Required",
+                                    + "The bill and credit ledger will be applied during fallback sync when the database is available.\n\n"
+                                    + $"Bill: {billCode}\nAccount: {creditAccountName}\nAmount: Rs. {grandTotal:N2}",
+                                    "Offline Credit Sale Queued",
                                     MessageBoxButtons.OK,
                                     MessageBoxIcon.Warning);
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    CreditManager.AddTransaction(creditAccountId, "BILL", grandTotal, "DEBIT",
-                                        "POS sale", billCode, DateTime.Today);
-                                }
-                                catch (Exception ex)
-                                {
-                                    MessageBox.Show(
-                                        "The bill was saved, but the credit ledger could not be updated.\n\n"
-                                        + "Write this down and add the credit entry manually later:\n"
-                                        + $"Bill: {billCode}\nAccount: {creditAccountName}\nAmount: Rs. {grandTotal:N2}\n\n"
-                                        + "Error: " + ex.Message,
-                                        "Manual Credit Entry Required",
-                                        MessageBoxButtons.OK,
-                                        MessageBoxIcon.Warning);
-                                }
                             }
                         }
 
@@ -718,10 +703,11 @@ namespace WindowsFormsApp1
                 txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
                 txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
 
-                decimal retailPrice = decimal.Parse(txtRetailPrice.Text);
-                decimal amount = decimal.Parse(txtAmount.Text);
-                decimal each_discount = decimal.Parse(txtDisEach.Text);
-                decimal whole_discount = decimal.Parse(txtDisWhole.Text);
+                decimal retailPrice, amount, each_discount, whole_discount;
+                if (!TryReadBillingInput(out retailPrice, out amount, out each_discount, out whole_discount))
+                {
+                    return;
+                }
 
                 decimal finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
                 lblFinalPrice.Text = finalPrice.ToString();
@@ -733,8 +719,8 @@ namespace WindowsFormsApp1
                     if (billItem != null)
                     {
                         billItem.ItemName = txtItemName.Text;
-                        billItem.Amount = decimal.Parse(txtAmount.Text);
-                        billItem.Rate = decimal.Parse(txtRetailPrice.Text);
+                        billItem.Amount = amount;
+                        billItem.Rate = retailPrice;
                         billItem.DiscountedPrice = finalPrice;
                         MessageBox.Show("Record updated successfully!");
                         LoadBillingData();
@@ -1186,7 +1172,12 @@ namespace WindowsFormsApp1
                     string total_discounted_price = row.Cells[4].Value.ToString();
                     string amount = row.Cells[3].Value.ToString();
 
-                    decimal ourprice = decimal.Parse(total_discounted_price) / decimal.Parse(amount);
+                    decimal discountedPriceValue;
+                    decimal amountValue;
+                    decimal ourprice = PosNumberParser.TryParseMoney(total_discounted_price, out discountedPriceValue) &&
+                        PosNumberParser.TryParseQuantity(amount, out amountValue) && amountValue != 0m
+                        ? discountedPriceValue / amountValue
+                        : 0m;
 
 
                     // Print Rate
@@ -1327,11 +1318,17 @@ namespace WindowsFormsApp1
             txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
             txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
 
-            decimal retailPrice = decimal.Parse(txtRetailPrice.Text);
-            decimal qty = decimal.Parse(txtAmount.Text);
-            decimal eachDiscount = decimal.Parse(txtDisEach.Text);
-            decimal wholeDiscount = decimal.Parse(txtDisWhole.Text);
-            decimal minimum_price = decimal.Parse(lblCost.Text) * qty;
+            decimal retailPrice, qty, eachDiscount, wholeDiscount;
+            if (!TryReadBillingInput(out retailPrice, out qty, out eachDiscount, out wholeDiscount))
+            {
+                return false;
+            }
+            decimal cost;
+            if (!PosNumberParser.TryParseMoney(lblCost.Text, out cost))
+            {
+                cost = 0m;
+            }
+            decimal minimum_price = cost * qty;
             decimal billed_price = (retailPrice - eachDiscount) * qty - wholeDiscount;
 
             if (minimum_price > 0 && billed_price < minimum_price)
@@ -1355,7 +1352,7 @@ namespace WindowsFormsApp1
                         txtItemName.Text,
                         qty,
                         retailPrice,
-                        decimal.Parse(lblCost.Text),
+                        cost,
                         billed_price,
                         "Below-cost sale override approved locally.");
                     return true;
@@ -1395,6 +1392,35 @@ namespace WindowsFormsApp1
             prompt.AcceptButton = confirmation;
 
             return prompt.ShowDialog() == System.Windows.Forms.DialogResult.OK ? password : null;
+        }
+
+        private bool TryReadBillingInput(out decimal retailPrice, out decimal amount, out decimal eachDiscount, out decimal wholeDiscount)
+        {
+            retailPrice = 0m;
+            amount = 0m;
+            eachDiscount = 0m;
+            wholeDiscount = 0m;
+
+            if (!PosNumberParser.TryParseMoney(txtRetailPrice.Text, out retailPrice, allowZero: false))
+            {
+                MessageBox.Show("Enter a valid item price before continuing.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            if (!PosNumberParser.TryParseQuantity(txtAmount.Text, out amount))
+            {
+                MessageBox.Show("Enter a valid quantity greater than zero.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            if (!PosNumberParser.TryParseMoney(txtDisEach.Text, out eachDiscount) ||
+                !PosNumberParser.TryParseMoney(txtDisWhole.Text, out wholeDiscount))
+            {
+                MessageBox.Show("Enter valid discount amounts.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            return true;
         }
 
         private void listBoxSuggestions_SelectedIndexChanged(object sender, EventArgs e)

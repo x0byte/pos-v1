@@ -92,13 +92,29 @@ namespace WindowsFormsApp1
             txtDisEach.Text = string.IsNullOrEmpty(txtDisEach.Text) ? "0" : txtDisEach.Text;
             txtDisWhole.Text = string.IsNullOrEmpty(txtDisWhole.Text) ? "0" : txtDisWhole.Text;
 
-            decimal retailPrice = decimal.Parse(txtPrice.Text);
-            decimal amount = decimal.Parse(txtAmount.Text);
-
-            decimal each_discount = decimal.Parse(txtDisEach.Text);
-            decimal whole_discount = decimal.Parse(txtDisWhole.Text);
+            decimal retailPrice;
+            decimal amount;
+            decimal each_discount;
+            decimal whole_discount;
+            try
+            {
+                retailPrice = PosNumberParser.ParseRequiredMoney(txtPrice.Text, "Retail price", allowZero: false);
+                amount = PosNumberParser.ParseRequiredQuantity(txtAmount.Text, "Quantity");
+                each_discount = PosNumberParser.ParseRequiredMoney(txtDisEach.Text, "Item discount");
+                whole_discount = PosNumberParser.ParseRequiredMoney(txtDisWhole.Text, "Whole discount");
+            }
+            catch (FormatException ex)
+            {
+                MessageBox.Show(ex.Message, "Invalid Item Value", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             decimal finalPrice = (retailPrice * amount) - (each_discount * amount) - whole_discount;
+            if (finalPrice < 0)
+            {
+                MessageBox.Show("Discounts cannot make the final price negative.", "Invalid Item Value", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
             lblFinalPrice.Text = finalPrice.ToString();
 

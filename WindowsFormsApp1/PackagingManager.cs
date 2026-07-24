@@ -163,13 +163,13 @@ namespace WindowsFormsApp1
                         UpdateInventoryAmount(conn, tx, packagedItemId, request.PacketsCreated);
 
                         long batchId = InsertPackagingBatch(conn, tx, request, source, packagedItemId, packagedItemName, barcode, createdByUsername);
-                        InsertStockMovement(conn, tx, source.Id, source.ItemName, "packaging_source", -request.SourceQtyUsed, batchId, createdByUsername,
+                        InsertStockMovement(conn, tx, source.Id, source.ItemName, InventoryMutationRules.PackagingConsumption, -request.SourceQtyUsed, batchId, createdByUsername,
                             "Used for packaging batch " + batchId);
-                        InsertStockMovement(conn, tx, packagedItemId, packagedItemName, "packaging_output", request.PacketsCreated, batchId, createdByUsername,
+                        InsertStockMovement(conn, tx, packagedItemId, packagedItemName, InventoryMutationRules.PackagingOutput, request.PacketsCreated, batchId, createdByUsername,
                             "Created by packaging batch " + batchId);
 
                         tx.Commit();
-                        AppCache.Refresh();
+                        RefreshCacheAfterCommit();
 
                         return new PackagingBatchResult
                         {
@@ -284,7 +284,7 @@ namespace WindowsFormsApp1
         private static void UpdateInventoryAmount(MySqlConnection conn, MySqlTransaction tx, int itemId, decimal qtyDelta)
         {
             using (MySqlCommand cmd = new MySqlCommand(
-                "UPDATE inventory SET amount = amount + @qty_delta WHERE id = @id", conn, tx))
+                "UPDATE inventory SET amount = COALESCE(amount, 0) + @qty_delta, stock_update_time = NOW() WHERE id = @id", conn, tx))
             {
                 cmd.Parameters.AddWithValue("@qty_delta", qtyDelta);
                 cmd.Parameters.AddWithValue("@id", itemId);
@@ -376,6 +376,18 @@ namespace WindowsFormsApp1
             public decimal Amount { get; set; }
             public string Barcode { get; set; }
             public decimal? Cost { get; set; }
+        }
+
+        private static void RefreshCacheAfterCommit()
+        {
+            try
+            {
+                AppCache.Refresh();
+            }
+            catch (Exception ex)
+            {
+                UpdateLogger.Error("Inventory cache refresh failed after committed packaging transaction", ex);
+            }
         }
     }
 }

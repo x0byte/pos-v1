@@ -15,11 +15,13 @@ namespace WindowsFormsApp1
             public string Database { get; set; }
             public string Uid { get; set; }
             public string Pwd { get; set; }
+            public string PwdProtected { get; set; }
             public string OverridePassword { get; set; }
+            public string OverridePasswordProtected { get; set; }
         }
 
         private static readonly string ConfigFilePath =
-            Path.Combine(Application.StartupPath, "config.json");
+            RuntimePathProvider.GetDataFilePath("config.json");
 
         public static string ConnectionString { get; private set; } =
             "server=127.0.0.1;database=db_stc;uid=root;pwd=;";
@@ -47,17 +49,25 @@ namespace WindowsFormsApp1
                     return;
                 }
 
+                string dbPassword = ReadSecret(config.PwdProtected, config.Pwd);
+                string overridePassword = ReadSecret(config.OverridePasswordProtected, config.OverridePassword);
+
                 ConnectionString = BuildConnectionString(
                     config.Server,
                     config.Port,
                     config.Database,
                     config.Uid,
-                    config.Pwd
+                    dbPassword
                 );
-                OverridePassword = config.OverridePassword;
+                OverridePassword = overridePassword;
                 if (string.Equals(OverridePassword, "admin123", StringComparison.Ordinal))
                 {
                     Console.WriteLine("WARNING: OverridePassword is still set to the sample default value 'admin123'.");
+                }
+
+                if (!string.IsNullOrEmpty(config.Pwd) || !string.IsNullOrEmpty(config.OverridePassword))
+                {
+                    Save(config.Server, config.Port, config.Database, config.Uid, dbPassword, overridePassword);
                 }
             }
             catch (Exception ex)
@@ -85,8 +95,10 @@ namespace WindowsFormsApp1
                 Port = finalPort,
                 Database = finalDatabase,
                 Uid = finalUid,
-                Pwd = finalPwd,
-                OverridePassword = OverridePassword
+                Pwd = null,
+                PwdProtected = SecretProtector.Protect(finalPwd),
+                OverridePassword = null,
+                OverridePasswordProtected = SecretProtector.Protect(OverridePassword ?? string.Empty)
             };
 
             string json = JsonConvert.SerializeObject(config, Formatting.Indented);
@@ -125,6 +137,23 @@ namespace WindowsFormsApp1
             }
 
             return $"server={server};database={database};uid={uid};pwd={pwd};";
+        }
+
+        private static string ReadSecret(string protectedValue, string legacyValue)
+        {
+            if (!string.IsNullOrWhiteSpace(protectedValue))
+            {
+                try
+                {
+                    return SecretProtector.Unprotect(protectedValue);
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            }
+
+            return legacyValue ?? string.Empty;
         }
     }
 }

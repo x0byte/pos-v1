@@ -369,7 +369,13 @@ namespace WindowsFormsApp1
                 try
                 {
                     DataTable dt = BuildItemsDataTable();
-                    billCode = BillHistoryManager.SaveBillFromDataTable(code, totalAmount, discountAmount, dt, _printSubmissionId, paymentMethod);
+                    billCode = BillHistoryManager.SaveBill(dt.AsEnumerable().Select(row => new BillLineRecord
+                    {
+                        ItemName = row["item_name"]?.ToString() ?? string.Empty,
+                        Rate = Convert.ToDecimal(row["rate"]),
+                        Amount = Convert.ToDecimal(row["amount"]),
+                        DiscountedPrice = Convert.ToDecimal(row["discounted_price"])
+                    }).ToList(), code, totalAmount, discountAmount, _printSubmissionId, paymentMethod, creditAccountId);
                 }
                 catch (Exception ex)
                 {
@@ -386,8 +392,7 @@ namespace WindowsFormsApp1
                         throw;
                     }
 
-                    FallbackBillLogger.LogFailedBill(printGrid, code, totalAmount, discountAmount, null);
-                    billCode = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+                    billCode = FallbackBillLogger.LogFailedBill(printGrid, code, totalAmount, discountAmount, _printSubmissionId, paymentMethod, creditAccountId);
                 }
 
                 if (paymentMethod == "CREDIT" && creditAccountId > 0)
@@ -396,30 +401,11 @@ namespace WindowsFormsApp1
                     {
                         MessageBox.Show(
                             "This credit bill was queued offline with a LOCAL bill code.\n\n"
-                            + "The bill can be synced later by the fallback mechanism, but the credit ledger was not updated automatically.\n\n"
-                            + $"Write this down for manual credit entry:\nBill: {billCode}\nAccount: {creditAccountName}\nAmount: Rs. {grandTotal:N2}",
-                            "Manual Credit Entry Required",
+                            + "The bill and credit ledger will be applied during fallback sync when the database is available.\n\n"
+                            + $"Bill: {billCode}\nAccount: {creditAccountName}\nAmount: Rs. {grandTotal:N2}",
+                            "Offline Credit Sale Queued",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Warning);
-                    }
-                    else
-                    {
-                        try
-                        {
-                            CreditManager.AddTransaction(creditAccountId, "BILL", grandTotal, "DEBIT",
-                                "POS sale (pending bill)", billCode, DateTime.Today);
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(
-                                "The bill was saved, but the credit ledger could not be updated.\n\n"
-                                + "Write this down and add the credit entry manually later:\n"
-                                + $"Bill: {billCode}\nAccount: {creditAccountName}\nAmount: Rs. {grandTotal:N2}\n\n"
-                                + "Error: " + ex.Message,
-                                "Manual Credit Entry Required",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Warning);
-                        }
                     }
                 }
 

@@ -219,10 +219,26 @@ namespace WindowsFormsApp1
             using (var conn = new MySqlConnection(Conn))
             {
                 conn.Open();
-                const string query = @"INSERT INTO credit_transactions
-                    (account_id, txn_type, amount, direction, description, bill_code, txn_date, recorded_by, recorded_at)
-                    VALUES (@account_id, @txn_type, @amount, @direction, @description, @bill_code, @txn_date, @recorded_by, NOW())";
-                var cmd = new MySqlCommand(query, conn);
+                InsertTransaction(conn, null, accountId, txnType, amount, direction, description, billCode, txnDate, UserSession.Username ?? "system");
+            }
+
+            ApplyBalanceDelta(accountId, direction, amount);
+        }
+
+        public static void AddTransaction(MySqlConnection conn, MySqlTransaction tx, int accountId, string txnType, decimal amount, string direction,
+            string description, string billCode, DateTime txnDate, string recordedBy)
+        {
+            InsertTransaction(conn, tx, accountId, txnType, amount, direction, description, billCode, txnDate, recordedBy);
+        }
+
+        private static void InsertTransaction(MySqlConnection conn, MySqlTransaction tx, int accountId, string txnType, decimal amount, string direction,
+            string description, string billCode, DateTime txnDate, string recordedBy)
+        {
+            const string query = @"INSERT INTO credit_transactions
+                (account_id, txn_type, amount, direction, description, bill_code, txn_date, recorded_by, recorded_at)
+                VALUES (@account_id, @txn_type, @amount, @direction, @description, @bill_code, @txn_date, @recorded_by, NOW())";
+            using (var cmd = new MySqlCommand(query, conn, tx))
+            {
                 cmd.Parameters.AddWithValue("@account_id", accountId);
                 cmd.Parameters.AddWithValue("@txn_type", txnType);
                 cmd.Parameters.AddWithValue("@amount", amount);
@@ -230,11 +246,9 @@ namespace WindowsFormsApp1
                 cmd.Parameters.AddWithValue("@description", description ?? "");
                 cmd.Parameters.AddWithValue("@bill_code", string.IsNullOrWhiteSpace(billCode) ? (object)DBNull.Value : billCode);
                 cmd.Parameters.AddWithValue("@txn_date", txnDate.Date);
-                cmd.Parameters.AddWithValue("@recorded_by", UserSession.Username ?? "system");
+                cmd.Parameters.AddWithValue("@recorded_by", string.IsNullOrWhiteSpace(recordedBy) ? "system" : recordedBy);
                 cmd.ExecuteNonQuery();
             }
-
-            ApplyBalanceDelta(accountId, direction, amount);
         }
 
         public static void AddTransactions(int accountId, IEnumerable<CreditTransactionEntry> entries)

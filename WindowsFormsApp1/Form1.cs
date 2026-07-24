@@ -17,9 +17,15 @@ namespace WindowsFormsApp1
     {
         public Form1()
         {
+            InitializeComponent();
             DatabaseConfig.Load();
+            this.Shown += Form1_Shown;
+        }
 
-            if (!File.Exists(Path.Combine(Application.StartupPath, "config.json")))
+        private async void Form1_Shown(object sender, EventArgs e)
+        {
+            this.Shown -= Form1_Shown;
+            if (!File.Exists(RuntimePathProvider.GetDataFilePath("config.json")))
             {
                 MessageBox.Show(
                     "No database configuration found.\nPlease configure your database connection to continue.",
@@ -29,24 +35,40 @@ namespace WindowsFormsApp1
                 DatabaseConfig.Load();
             }
 
-            AppCache.Load();
-            CreditManager.WarmAccountCacheAsync();
-            Task.Run(() =>
+            await Task.Run(() =>
+            {
+                try
+                {
+                    AppCache.Load();
+                }
+                catch (Exception ex)
+                {
+                    UpdateLogger.Error("Startup cache load failed", ex);
+                    BeginInvoke((Action)(() =>
+                        MessageBox.Show("The app opened, but inventory cache could not be loaded.\nCheck the database connection and try again.",
+                            "Database Unavailable", MessageBoxButtons.OK, MessageBoxIcon.Warning)));
+                }
+            });
+
+            _ = CreditManager.WarmAccountCacheAsync();
+            _ = Task.Run(() =>
             {
                 try
                 {
                     int synced = FallbackBillLogger.RetryUnsynced();
-                    if (synced > 0)
+                    if (synced > 0 && !IsDisposed)
                     {
-                        this.Invoke((Action)(() =>
+                        BeginInvoke((Action)(() =>
                             MessageBox.Show($"{synced} offline bill(s) successfully synced to cloud.",
                                 "Sync Complete", MessageBoxButtons.OK, MessageBoxIcon.Information)
                         ));
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    UpdateLogger.Error("Startup fallback sync failed", ex);
+                }
             });
-            InitializeComponent();
         }
 
         private void label1_Click(object sender, EventArgs e)
@@ -75,35 +97,19 @@ namespace WindowsFormsApp1
         public bool validateLogin(string username, string password, out bool isAdmin)
         {
             isAdmin = false;
-            try
+            AuthenticationResult result = AuthenticationService.ValidateLogin(username, password);
+            if (result.Success)
             {
-                using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
-                {
-                    conn.Open();
-                    string query = "SELECT isAdmin FROM users WHERE username = @username AND password = @password LIMIT 1";
-                    MySqlCommand command = new MySqlCommand(query, conn);
-
-                    command.Parameters.AddWithValue("@username", txtName.Text);
-                    command.Parameters.AddWithValue("@password", txtPass.Text);
-
-                    object result = command.ExecuteScalar();
-                    if (result == null || result == DBNull.Value)
-                    {
-                        return false;
-                    }
-                    isAdmin = Convert.ToInt32(result) == 1;
-                    return true;
-
-
-
-                }
+                isAdmin = result.IsAdmin;
+                return true;
             }
-            catch (Exception ex)
+
+            if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
             {
-                MessageBox.Show("An error occured in the user authentication system. Check the database connection: " + ex.Message);
-
-                return false;
+                MessageBox.Show(result.ErrorMessage, "Login Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
+            return false;
         }
 
         private void label3_Click(object sender, EventArgs e)

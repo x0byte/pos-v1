@@ -1,1 +1,35 @@
 .vs/
+*.user
+*.suo
+*.cache
+*.log
+*.pdb
+*.ilk
+*.nupkg
+
+# Build output
+bin/
+obj/
+Debug/
+Release/
+x86/
+x64/
+publish/
+Releases/
+SetupFiles/
+
+# NuGet packages are restored, not committed.
+packages/
+
+# Runtime data belongs under LocalApplicationData via RuntimePathProvider.
+config.json
+failed_bills.csv
+paused_carts.json
+update-log.txt
+*.audit.json
+
+# Installer/runtime artifacts
+*.msi
+*.exe
+*.application
+*.deploy

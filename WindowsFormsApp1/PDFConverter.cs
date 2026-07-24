@@ -102,7 +102,12 @@ public class PDFConverter
                 maxOffsetY = Math.Max(maxOffsetY, offsetY);
                 offsetY = maxOffsetY - (itemNameLines.Length * ((int)fontHeight + 2));
 
-                decimal ourprice = decimal.Parse(price) / decimal.Parse(quantity);
+                decimal priceValue;
+                decimal quantityValue;
+                decimal ourprice = PosNumberParser.TryParseMoney(price, out priceValue) &&
+                    PosNumberParser.TryParseQuantity(quantity, out quantityValue) && quantityValue != 0m
+                    ? priceValue / quantityValue
+                    : 0m;
                 graphics.DrawString(ourprice.ToString("N2"), font, Brushes.Black, startX + idColWidth + itemNameColWidth + 80, offsetY);
                 graphics.DrawString(quantity, font, Brushes.Black, startX + idColWidth + itemNameColWidth + rateColWidth + 165, offsetY);
                 graphics.DrawString(price, font, Brushes.Black, startX + idColWidth + itemNameColWidth + rateColWidth + qtyColWidth + 200, offsetY);

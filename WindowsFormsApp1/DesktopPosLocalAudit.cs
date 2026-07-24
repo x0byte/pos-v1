@@ -10,8 +10,8 @@ namespace WindowsFormsApp1
 {
     public static class DesktopPosLocalAudit
     {
-        private static readonly string OverrideLogPath = Path.Combine(Application.StartupPath, "override_log.csv");
-        private static readonly string SnapshotDirectory = Path.Combine(Application.StartupPath, "mobile_bill_snapshots");
+        private static readonly string OverrideLogPath = RuntimePathProvider.GetDataFilePath("override_log.csv");
+        private static readonly string SnapshotDirectory = RuntimePathProvider.GetDataDirectoryPath("mobile_bill_snapshots");
 
         public static void AppendOverrideLog(string username, string itemName, decimal qty, decimal retailPrice, decimal cost, decimal attemptedLineTotal, string reasonSnippet)
         {

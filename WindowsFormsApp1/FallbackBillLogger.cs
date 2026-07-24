@@ -12,17 +12,30 @@ namespace WindowsFormsApp1
 {
     public static class FallbackBillLogger
     {
-        private static readonly string CsvPath = Path.Combine(Application.StartupPath, "stc_fallback_bills.csv");
+        private static readonly string CsvPath = RuntimePathProvider.GetDataFilePath("stc_fallback_bills.csv");
         private static readonly string CsvTempPath = CsvPath + ".tmp";
         private static readonly string CsvBackupPath = CsvPath + ".bak";
         private static readonly Mutex QueueMutex = new Mutex(false, "STC_POS_FallbackBillLogger_Queue");
-        private const int MinColumns = 9;
+        private const int MinColumns = 12;
 
-        public static void LogFailedBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount, string clientSubmissionId)
+        public static string LogFailedBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount, string clientSubmissionId)
         {
+            return LogFailedBill(dataGridView, salesperson, totalAmount, discountAmount, clientSubmissionId, "CASH");
+        }
+
+        public static string LogFailedBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount, string clientSubmissionId, string paymentMethod)
+        {
+            return LogFailedBill(dataGridView, salesperson, totalAmount, discountAmount, clientSubmissionId, paymentMethod, 0);
+        }
+
+        public static string LogFailedBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount, string clientSubmissionId, string paymentMethod, int creditAccountId)
+        {
+            string billRef = GenerateLocalReference();
+            string idempotencyId = string.IsNullOrWhiteSpace(clientSubmissionId)
+                ? "fallback-sale-" + Guid.NewGuid().ToString("N")
+                : clientSubmissionId;
             try
             {
-                string billRef = "LOCAL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
                 decimal grandTotal = totalAmount - discountAmount;
                 int itemCount = 0;
                 DateTime occurredAt = DateTime.Now;
@@ -51,7 +64,9 @@ namespace WindowsFormsApp1
                     grandTotal.ToString(CultureInfo.InvariantCulture),
                     itemCount.ToString(CultureInfo.InvariantCulture),
                     "0",
-                    clientSubmissionId ?? string.Empty
+                    idempotencyId,
+                    string.IsNullOrWhiteSpace(paymentMethod) ? "CASH" : paymentMethod,
+                    creditAccountId.ToString(CultureInfo.InvariantCulture)
                 }));
 
                 foreach (DataGridViewRow row in dataGridView.Rows)
@@ -110,7 +125,7 @@ namespace WindowsFormsApp1
 
                 if (!TryEnterQueueMutex(5000))
                 {
-                    return;
+                    return billRef;
                 }
 
                 try
@@ -126,6 +141,8 @@ namespace WindowsFormsApp1
             {
                 // Silent by design for cashier flow.
             }
+
+            return billRef;
         }
 
         public static void LogStockMovementSkipped(string billReference, string itemName, string reason)
@@ -262,10 +279,6 @@ namespace WindowsFormsApp1
                     .GroupBy(r => r[1] ?? string.Empty, StringComparer.Ordinal)
                     .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
 
-                Dictionary<string, int> inventoryByName = AppCache.Inventory
-                    .GroupBy(inv => inv.ItemName ?? string.Empty, StringComparer.Ordinal)
-                    .ToDictionary(group => group.Key, group => group.First().Id, StringComparer.Ordinal);
-
                 List<string[]> unsyncedBills = rows
                     .Where(r => string.Equals(r[0], "BILL", StringComparison.OrdinalIgnoreCase) && r[8] != "1")
                     .ToList();
@@ -282,11 +295,7 @@ namespace WindowsFormsApp1
                     List<string[]> itemRows = relatedRows
                         .Where(r => string.Equals(r[0], "ITEM", StringComparison.OrdinalIgnoreCase))
                         .ToList();
-                    List<string[]> movementRows = relatedRows
-                        .Where(r => string.Equals(r[0], "MOVEMENT", StringComparison.OrdinalIgnoreCase))
-                        .ToList();
-
-                    if (TrySyncBill(billRow, itemRows, movementRows, inventoryByName))
+                    if (TrySyncBill(billRow, itemRows))
                     {
                         foreach (string[] row in relatedRows)
                         {
@@ -316,79 +325,32 @@ namespace WindowsFormsApp1
             }
         }
 
-        private static bool TrySyncBill(string[] billRow, List<string[]> itemRows, List<string[]> movementRows, Dictionary<string, int> inventoryByName)
+        private static bool TrySyncBill(string[] billRow, List<string[]> itemRows)
         {
             try
             {
                 string salesperson = billRow[3];
                 decimal totalAmount = ParseDecimal(billRow[4]);
                 decimal discountAmount = ParseDecimal(billRow[5]);
-                decimal grandTotal = ParseDecimal(billRow[6]);
-                int itemCount = ParseInt(billRow[7]);
                 DateTime dateTime = ParseDateTime(billRow[2]);
-                string clientSubmissionId = billRow.Length > 9 ? billRow[9] : null;
+                string clientSubmissionId = billRow.Length > 9 && !string.IsNullOrWhiteSpace(billRow[9])
+                    ? billRow[9]
+                    : billRow[1];
+                string paymentMethod = billRow.Length > 10 && !string.IsNullOrWhiteSpace(billRow[10])
+                    ? billRow[10]
+                    : "CASH";
+                int creditAccountId = billRow.Length > 11 ? ParseInt(billRow[11]) : 0;
 
-                using (MySqlConnection conn = new MySqlConnection(DatabaseConfig.ConnectionString))
+                List<BillLineRecord> items = itemRows.Select(row => new BillLineRecord
                 {
-                    conn.Open();
+                    ItemName = row[2] ?? string.Empty,
+                    Rate = ParseDecimal(row[3]),
+                    Amount = ParseDecimal(row[4]),
+                    DiscountedPrice = ParseDecimal(row[5])
+                }).ToList();
 
-                    if (!string.IsNullOrWhiteSpace(clientSubmissionId))
-                    {
-                        string existingBillQuery = "SELECT bill_id FROM bill_history WHERE client_submission_id = @sid LIMIT 1";
-                        using (MySqlCommand existingCmd = new MySqlCommand(existingBillQuery, conn))
-                        {
-                            existingCmd.Parameters.AddWithValue("@sid", clientSubmissionId);
-                            object existing = existingCmd.ExecuteScalar();
-                            if (existing != null && existing != DBNull.Value)
-                            {
-                                return true;
-                            }
-                        }
-                    }
-
-                    MySqlTransaction transaction = conn.BeginTransaction();
-                    try
-                    {
-                        string insertHeader = @"INSERT INTO bill_history
-                        (bill_code, date_time, salesperson, total_amount, discount_amount, grand_total, item_count, client_submission_id)
-                        VALUES ('', @date_time, @salesperson, @total_amount, @discount_amount, @grand_total, @item_count, @client_submission_id)";
-
-                        MySqlCommand cmd = new MySqlCommand(insertHeader, conn, transaction);
-                        cmd.Parameters.AddWithValue("@date_time", dateTime);
-                        cmd.Parameters.AddWithValue("@salesperson", salesperson); // salesperson is always employee emp_code, never emp_name.
-                        cmd.Parameters.AddWithValue("@total_amount", totalAmount);
-                        cmd.Parameters.AddWithValue("@discount_amount", discountAmount);
-                        cmd.Parameters.AddWithValue("@grand_total", grandTotal);
-                        cmd.Parameters.AddWithValue("@item_count", itemCount);
-                        cmd.Parameters.AddWithValue("@client_submission_id", string.IsNullOrWhiteSpace(clientSubmissionId) ? (object)DBNull.Value : clientSubmissionId);
-                        cmd.ExecuteNonQuery();
-
-                        long billId = cmd.LastInsertedId;
-                        string billCode = "STC-" + billId.ToString("D5");
-
-                        string updateCode = "UPDATE bill_history SET bill_code = @bill_code WHERE bill_id = @bill_id";
-                        MySqlCommand updateCmd = new MySqlCommand(updateCode, conn, transaction);
-                        updateCmd.Parameters.AddWithValue("@bill_code", billCode);
-                        updateCmd.Parameters.AddWithValue("@bill_id", billId);
-                        updateCmd.ExecuteNonQuery();
-
-                        InsertBillItems(conn, transaction, billId, itemRows);
-                        InsertStockMovements(conn, transaction, billId, movementRows, inventoryByName);
-
-                        transaction.Commit();
-                        return true;
-                    }
-                    catch
-                    {
-                        transaction.Rollback();
-                        if (!string.IsNullOrWhiteSpace(clientSubmissionId) && ExistingSubmissionExists(conn, clientSubmissionId))
-                        {
-                            return true;
-                        }
-
-                        return false;
-                    }
-                }
+                BillHistoryManager.SaveBill(items, salesperson, totalAmount, discountAmount, clientSubmissionId, paymentMethod, creditAccountId, dateTime);
+                return true;
             }
             catch
             {
@@ -405,6 +367,11 @@ namespace WindowsFormsApp1
                 object existing = existingCmd.ExecuteScalar();
                 return existing != null && existing != DBNull.Value;
             }
+        }
+
+        private static string GenerateLocalReference()
+        {
+            return "LOCAL-" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpperInvariant();
         }
 
         private static void InsertBillItems(MySqlConnection conn, MySqlTransaction transaction, long billId, List<string[]> itemRows)

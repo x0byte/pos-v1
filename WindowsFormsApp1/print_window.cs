@@ -41,15 +41,16 @@ namespace WindowsFormsApp1
             if (result == DialogResult.Yes)
             {
                 // Proceed with printing if the user confirms
-                PrintDocument printDocument = new PrintDocument();
-
-                printDocument.PrintPage += (s, ev) =>
+                using (PrintDocument printDocument = new PrintDocument())
                 {
-                    ev.Graphics.DrawImage(_bitmap, 0, 0);  // Draw the bitmap to the printer graphics
-                };
+                    printDocument.PrintPage += (s, ev) =>
+                    {
+                        ev.Graphics.DrawImage(_bitmap, 0, 0);  // Draw the bitmap to the printer graphics
+                    };
 
-                // Trigger the printing process
-                printDocument.Print();
+                    // Trigger the printing process
+                    printDocument.Print();
+                }
             }
             else
             {
@@ -63,6 +64,13 @@ namespace WindowsFormsApp1
         private void btnClose_Click(object sender, EventArgs e)
         {
             this.Close();
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            _bitmap?.Dispose();
+            _bitmap = null;
+            base.OnFormClosed(e);
         }
     }
 }

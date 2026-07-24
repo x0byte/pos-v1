@@ -19,6 +19,13 @@ namespace WindowsFormsApp1
             public bool CreditBillWithoutLedgerMatch { get; set; }
         }
 
+        public sealed class BillSaveResult
+        {
+            public string BillCode { get; set; }
+            public long BillId { get; set; }
+            public bool ExistingSubmission { get; set; }
+        }
+
         public static string SaveBill(DataGridView dataGridView, string salesperson, decimal totalAmount, decimal discountAmount)
         {
             return SaveBill(dataGridView, salesperson, totalAmount, discountAmount, null, "CASH");
@@ -49,7 +56,7 @@ namespace WindowsFormsApp1
                 });
             }
 
-            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, paymentMethod ?? "CASH");
+            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, paymentMethod ?? "CASH", 0).BillCode;
         }
 
         public static string SaveBillFromDataTable(string salesperson, decimal totalAmount, decimal discountAmount, DataTable itemsTable, string clientSubmissionId = null)
@@ -71,7 +78,7 @@ namespace WindowsFormsApp1
                 });
             }
 
-            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, paymentMethod ?? "CASH");
+            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, paymentMethod ?? "CASH", 0).BillCode;
         }
 
         public static int GetBillIdByCode(string billCode)
@@ -90,11 +97,28 @@ namespace WindowsFormsApp1
 
         public static string SaveBill(IList<BillLineRecord> items, string salesperson, decimal totalAmount, decimal discountAmount, string clientSubmissionId, string paymentMethod)
         {
-            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, paymentMethod ?? "CASH");
+            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, paymentMethod ?? "CASH", 0).BillCode;
         }
 
-        private static string SaveBillInternal(string salesperson, decimal totalAmount, decimal discountAmount, IList<BillLineRecord> items, string clientSubmissionId, DateTime occurredAt, string paymentMethod)
+        public static string SaveBill(IList<BillLineRecord> items, string salesperson, decimal totalAmount, decimal discountAmount,
+            string clientSubmissionId, string paymentMethod, int creditAccountId)
         {
+            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, DateTime.Now, paymentMethod ?? "CASH", creditAccountId).BillCode;
+        }
+
+        public static string SaveBill(IList<BillLineRecord> items, string salesperson, decimal totalAmount, decimal discountAmount,
+            string clientSubmissionId, string paymentMethod, int creditAccountId, DateTime occurredAt)
+        {
+            return SaveBillInternal(salesperson, totalAmount, discountAmount, items, clientSubmissionId, occurredAt, paymentMethod ?? "CASH", creditAccountId).BillCode;
+        }
+
+        private static BillSaveResult SaveBillInternal(string salesperson, decimal totalAmount, decimal discountAmount, IList<BillLineRecord> items, string clientSubmissionId, DateTime occurredAt, string paymentMethod, int creditAccountId)
+        {
+            if (items == null || items.Count == 0)
+            {
+                throw new InvalidOperationException("Cannot save an empty bill.");
+            }
+
             decimal grandTotal = totalAmount - discountAmount;
             int itemCount = items.Count;
 
@@ -107,7 +131,7 @@ namespace WindowsFormsApp1
                     string existingBillCode = TryGetExistingBillCode(conn, clientSubmissionId);
                     if (!string.IsNullOrWhiteSpace(existingBillCode))
                     {
-                        return existingBillCode;
+                        return new BillSaveResult { BillCode = existingBillCode, ExistingSubmission = true };
                     }
                 }
 
@@ -160,18 +184,26 @@ namespace WindowsFormsApp1
 
                     InsertStockMovements(conn, transaction, billId, billCode, occurredAt, items);
 
+                    InsertBillPayment(conn, transaction, billId, billCode, paymentMethod, grandTotal);
+                    if (string.Equals(paymentMethod, "CREDIT", StringComparison.OrdinalIgnoreCase) && creditAccountId > 0)
+                    {
+                        CreditManager.AddTransaction(conn, transaction, creditAccountId, "BILL", grandTotal, "DEBIT",
+                            "POS sale", billCode, occurredAt.Date, UserSession.Username ?? "system");
+                    }
+
                     transaction.Commit();
-                    return billCode;
+                    RefreshCacheAfterCommit();
+                    return new BillSaveResult { BillCode = billCode, BillId = billId };
                 }
                 catch
                 {
-                    transaction.Rollback();
+                    TryRollback(transaction);
                     if (!string.IsNullOrWhiteSpace(clientSubmissionId))
                     {
                         string existingBillCode = TryGetExistingBillCode(conn, clientSubmissionId);
                         if (!string.IsNullOrWhiteSpace(existingBillCode))
                         {
-                            return existingBillCode;
+                            return new BillSaveResult { BillCode = existingBillCode, ExistingSubmission = true };
                         }
                     }
 
@@ -188,7 +220,6 @@ namespace WindowsFormsApp1
                 .GroupBy(inv => inv.ItemName ?? string.Empty, StringComparer.Ordinal)
                 .ToDictionary(group => group.Key, group => group.First().Id, StringComparer.Ordinal);
 
-            // Resolve item IDs first (cache hits are free; DB lookups are rare)
             var resolved = new List<(int itemId, BillLineRecord item)>();
             foreach (BillLineRecord item in items)
             {
@@ -210,8 +241,7 @@ namespace WindowsFormsApp1
 
                 if (resolvedItemId == null)
                 {
-                    FallbackBillLogger.LogStockMovementSkipped(billCode, item.ItemName, "No inventory.item_name match (cache or DB).");
-                    continue;
+                    throw new InvalidOperationException("No inventory match was found for item '" + item.ItemName + "'.");
                 }
 
                 resolved.Add((resolvedItemId.Value, item));
@@ -219,24 +249,60 @@ namespace WindowsFormsApp1
 
             if (resolved.Count == 0) return;
 
-            var movSql = new System.Text.StringBuilder(
+            using (MySqlCommand stockCmd = new MySqlCommand(
+                "UPDATE inventory SET amount = COALESCE(amount, 0) + @qty_delta, stock_update_time = NOW() WHERE id = @item_id", conn, transaction))
+            using (MySqlCommand movCmd = new MySqlCommand(
                 @"INSERT INTO stock_movement
-                (item_id, item_name, movement_type, qty_delta, reference_type, reference_id, occurred_at, created_at, created_by_user_id, created_by_username, note)
-                VALUES ");
-            MySqlCommand movCmd = new MySqlCommand(null, conn, transaction);
-            for (int i = 0; i < resolved.Count; i++)
+                  (item_id, item_name, movement_type, qty_delta, reference_type, reference_id, occurred_at, created_at, created_by_user_id, created_by_username, note)
+                  VALUES
+                  (@item_id, @item_name, 'sale', @qty_delta, 'bill_history', @reference_id, @occurred_at, NOW(), NULL, @created_by_username, @note)", conn, transaction))
             {
-                if (i > 0) movSql.Append(',');
-                movSql.Append($"(@ii{i},@in{i},'sale',@qd{i},'bill_history',@ri{i},@oa{i},NOW(),NULL,@cu{i},'Desktop POS sale')");
-                movCmd.Parameters.AddWithValue($"@ii{i}", resolved[i].itemId);
-                movCmd.Parameters.AddWithValue($"@in{i}", resolved[i].item.ItemName);
-                movCmd.Parameters.AddWithValue($"@qd{i}", -resolved[i].item.Amount);
-                movCmd.Parameters.AddWithValue($"@ri{i}", billId);
-                movCmd.Parameters.AddWithValue($"@oa{i}", occurredAt);
-                movCmd.Parameters.AddWithValue($"@cu{i}", createdByUsername);
+                stockCmd.Parameters.Add("@qty_delta", MySqlDbType.Decimal);
+                stockCmd.Parameters.Add("@item_id", MySqlDbType.Int32);
+
+                movCmd.Parameters.Add("@item_id", MySqlDbType.Int32);
+                movCmd.Parameters.Add("@item_name", MySqlDbType.VarChar);
+                movCmd.Parameters.Add("@qty_delta", MySqlDbType.Decimal);
+                movCmd.Parameters.Add("@reference_id", MySqlDbType.Int64);
+                movCmd.Parameters.Add("@occurred_at", MySqlDbType.DateTime);
+                movCmd.Parameters.Add("@created_by_username", MySqlDbType.VarChar);
+                movCmd.Parameters.Add("@note", MySqlDbType.Text);
+
+                foreach (var row in resolved)
+                {
+                    decimal qtyDelta = InventoryMutationRules.SaleDelta(row.item.Amount);
+                    stockCmd.Parameters["@qty_delta"].Value = qtyDelta;
+                    stockCmd.Parameters["@item_id"].Value = row.itemId;
+                    if (stockCmd.ExecuteNonQuery() != 1)
+                    {
+                        throw new InvalidOperationException("Inventory balance update failed for item '" + row.item.ItemName + "'.");
+                    }
+
+                    movCmd.Parameters["@item_id"].Value = row.itemId;
+                    movCmd.Parameters["@item_name"].Value = row.item.ItemName ?? string.Empty;
+                    movCmd.Parameters["@qty_delta"].Value = qtyDelta;
+                    movCmd.Parameters["@reference_id"].Value = billId;
+                    movCmd.Parameters["@occurred_at"].Value = occurredAt;
+                    movCmd.Parameters["@created_by_username"].Value = createdByUsername;
+                    movCmd.Parameters["@note"].Value = "Desktop POS sale " + billCode;
+                    movCmd.ExecuteNonQuery();
+                }
             }
-            movCmd.CommandText = movSql.ToString();
-            movCmd.ExecuteNonQuery();
+        }
+
+        private static void InsertBillPayment(MySqlConnection conn, MySqlTransaction transaction, long billId, string billCode, string paymentMethod, decimal amount)
+        {
+            using (MySqlCommand cmd = new MySqlCommand(
+                @"INSERT INTO bill_payments
+                  (bill_id, bill_code, payment_method, amount, created_at)
+                  VALUES (@bill_id, @bill_code, @payment_method, @amount, NOW())", conn, transaction))
+            {
+                cmd.Parameters.AddWithValue("@bill_id", billId);
+                cmd.Parameters.AddWithValue("@bill_code", billCode);
+                cmd.Parameters.AddWithValue("@payment_method", string.IsNullOrWhiteSpace(paymentMethod) ? "CASH" : paymentMethod);
+                cmd.Parameters.AddWithValue("@amount", amount);
+                cmd.ExecuteNonQuery();
+            }
         }
 
         private static string TryGetExistingBillCode(MySqlConnection conn, string clientSubmissionId)
@@ -391,6 +457,11 @@ namespace WindowsFormsApp1
                         ? Convert.ToString(header["payment_method"])
                         : "CASH";
 
+                    if (HasActiveReturnsForBill(conn, transaction, billId))
+                    {
+                        throw new InvalidOperationException("This bill has customer returns recorded and cannot be voided.");
+                    }
+
                     int stockReversals = InsertVoidStockReversals(conn, transaction, billId, billCode);
                     CreditVoidInfo creditInfo = ReverseCreditBillIfNeeded(conn, transaction, billCode, paymentMethod);
 
@@ -411,6 +482,7 @@ namespace WindowsFormsApp1
                     }
 
                     transaction.Commit();
+                    RefreshCacheAfterCommit();
                     return new VoidBillResult
                     {
                         BillCode = billCode,
@@ -421,7 +493,7 @@ namespace WindowsFormsApp1
                 }
                 catch
                 {
-                    transaction.Rollback();
+                    TryRollback(transaction);
                     throw;
                 }
             }
@@ -464,16 +536,22 @@ namespace WindowsFormsApp1
             }
 
             string createdByUsername = string.IsNullOrWhiteSpace(UserSession.Username) ? "desktop-pos" : UserSession.Username;
+            using (MySqlCommand stockCmd = new MySqlCommand(
+                "UPDATE inventory SET amount = COALESCE(amount, 0) + @qty_delta, stock_update_time = NOW() WHERE id = @item_id", conn, transaction))
             using (MySqlCommand cmd = new MySqlCommand(
                 @"INSERT INTO stock_movement
                   (item_id, item_name, movement_type, qty_delta, reference_type, reference_id,
                    occurred_at, created_at, created_by_user_id, created_by_username, note)
                   VALUES
-                  (@item_id, @item_name, 'void_reversal', @qty_delta, 'bill_history_void', @reference_id,
+                  (@item_id, @item_name, @movement_type, @qty_delta, 'bill_history_void', @reference_id,
                    NOW(), NOW(), NULL, @created_by_username, @note)", conn, transaction))
             {
+                stockCmd.Parameters.Add("@qty_delta", MySqlDbType.Decimal);
+                stockCmd.Parameters.Add("@item_id", MySqlDbType.Int32);
+
                 cmd.Parameters.Add("@item_id", MySqlDbType.Int32);
                 cmd.Parameters.Add("@item_name", MySqlDbType.VarChar);
+                cmd.Parameters.Add("@movement_type", MySqlDbType.VarChar);
                 cmd.Parameters.Add("@qty_delta", MySqlDbType.Decimal);
                 cmd.Parameters.Add("@reference_id", MySqlDbType.Int32);
                 cmd.Parameters.Add("@created_by_username", MySqlDbType.VarChar);
@@ -481,9 +559,19 @@ namespace WindowsFormsApp1
 
                 foreach (DataRow row in movements.Rows)
                 {
-                    cmd.Parameters["@item_id"].Value = row["item_id"] == DBNull.Value ? (object)DBNull.Value : Convert.ToInt32(row["item_id"]);
+                    decimal qtyDelta = InventoryMutationRules.VoidDelta(SafeToDecimal(row["qty_delta"]));
+                    int itemId = Convert.ToInt32(row["item_id"]);
+                    stockCmd.Parameters["@qty_delta"].Value = qtyDelta;
+                    stockCmd.Parameters["@item_id"].Value = itemId;
+                    if (stockCmd.ExecuteNonQuery() != 1)
+                    {
+                        throw new InvalidOperationException("Inventory reversal failed for item '" + Convert.ToString(row["item_name"]) + "'.");
+                    }
+
+                    cmd.Parameters["@item_id"].Value = itemId;
                     cmd.Parameters["@item_name"].Value = row["item_name"] == DBNull.Value ? string.Empty : Convert.ToString(row["item_name"]);
-                    cmd.Parameters["@qty_delta"].Value = -SafeToDecimal(row["qty_delta"]);
+                    cmd.Parameters["@movement_type"].Value = InventoryMutationRules.SaleVoid;
+                    cmd.Parameters["@qty_delta"].Value = qtyDelta;
                     cmd.Parameters["@reference_id"].Value = billId;
                     cmd.Parameters["@created_by_username"].Value = createdByUsername;
                     cmd.Parameters["@note"].Value = "Voided bill " + billCode;
@@ -492,6 +580,17 @@ namespace WindowsFormsApp1
             }
 
             return movements.Rows.Count;
+        }
+
+        private static bool HasActiveReturnsForBill(MySqlConnection conn, MySqlTransaction transaction, int billId)
+        {
+            using (MySqlCommand cmd = new MySqlCommand(
+                "SELECT COUNT(*) FROM returns WHERE original_bill_id = @bill_id AND status <> 'VOIDED'", conn, transaction))
+            {
+                cmd.Parameters.AddWithValue("@bill_id", billId);
+                object result = cmd.ExecuteScalar();
+                return result != null && result != DBNull.Value && Convert.ToInt32(result) > 0;
+            }
         }
 
         private class CreditVoidInfo
@@ -570,6 +669,30 @@ namespace WindowsFormsApp1
             }
 
             return info;
+        }
+
+        private static void RefreshCacheAfterCommit()
+        {
+            try
+            {
+                AppCache.Refresh();
+            }
+            catch (Exception ex)
+            {
+                UpdateLogger.Error("Inventory cache refresh failed after committed bill transaction", ex);
+            }
+        }
+
+        private static void TryRollback(MySqlTransaction transaction)
+        {
+            try
+            {
+                transaction.Rollback();
+            }
+            catch (Exception ex)
+            {
+                UpdateLogger.Error("Bill transaction rollback failed or transaction outcome was already decided", ex);
+            }
         }
     }
 }
